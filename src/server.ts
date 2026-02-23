@@ -159,15 +159,30 @@ const mode = process.argv[2];
 
 if (mode === '--standalone') {
     console.log('Running in standalone mode.');
+
+    // Diario: crear challenge
     cron.schedule('0 0 * * *', async () => {
-        await maybePostWeeklySummary();
         await challenge();
     });
-    cron.schedule('0 23 * * *', () => {
-        highscores();
+
+    // Diario: recoger highscores
+    cron.schedule('0 23 * * *', async () => {
+        await highscores();
     });
+
+    // Semanal: resumen (domingo 23:10, por ejemplo)
+    cron.schedule('10 23 * * 0', async () => {
+        await maybePostWeeklySummary();
+    });
+
+    // Anual: resumen (1 de enero a las 00:10)          
+    cron.schedule('10 0 1 1 *', async () => {
+    await postYearlySummaryToDiscord(new Date().getFullYear() - 1);
+});
+
 } else {
     app.listen(port, () => {
         console.log(`Server listening at http://localhost:${port}`);
     });
 }
+
