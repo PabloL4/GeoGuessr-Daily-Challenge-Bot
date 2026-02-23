@@ -1,228 +1,253 @@
-Current commands:
+# GeoGuessr Daily Challenge Bot
 
+![Node.js](https://img.shields.io/badge/node-20.x-green)
+![TypeScript](https://img.shields.io/badge/typescript-5.x-blue)
+![License](https://img.shields.io/badge/license-MIT-purple)
+
+A fully automated Discord bot for managing **daily GeoGuessr challenges**, tracking results, and publishing **weekly, monthly, and yearly summaries** with stats, rankings, and fun messages.
+
+This project is based on (and heavily extended from) `daily-geoguessr-bot` (by sh-mug: https://github.com/sh-mug/daily-geoguessr-bot), rewritten in **Node.js + TypeScript (ESM)** with a focus on automation, data integrity, and long-term league tracking.
+
+---
+
+## 📦 Installation
+
+```bash
+git clone https://github.com/yourname/yourrepo.git
+cd yourrepo
+npm install
+npm run build
 npm start
-npm run linkbot
+```
 
-curl.exe  "http://localhost:25000/challenge"
-Invoke-WebRequest "http://localhost:25000/highscores" -UseBasicParsing 
-curl.exe "http://localhost:25000/weekly?weekStart=2026-01-19"     
-
-# GeoGuessr Daily Challenge Bot + League (Discord)
-
-An advanced fork of **daily-geoguessr-bot** that creates a daily GeoGuessr challenge, posts it to Discord, collects highscores, and maintains a weekly league — all without a database.
-
-This version adds:
-- a modern map selector with cooldowns and weights
-- weekly and yearly summaries
-- variable rounds and time limits
-- playful daily challenge messages
-- a persistent Discord bot for securely linking GeoGuessr ↔ Discord users via slash commands
+![Weekly Table](docs/sample_week_summary.png)
 
 ---
 
-## Features
+## ✨ Features
 
-### Daily GeoGuessr Challenge
-- Automatically creates a daily challenge on GeoGuessr.
-- Posts the challenge to Discord with:
-  - challenge link
-  - map name
-  - game mode (Move / NM / NMPZ)
-  - number of rounds
-  - time per round
-  - a fun, dynamic intro message (⚡, 😌, 🔟, etc.)
+### 🗺️ Daily Challenges
+- Automatically creates a new GeoGuessr challenge every day
+- Smart **map selection** with:
+  - Weighted randomness
+  - Cooldowns to avoid repetition
+  - Mode restrictions per map
+- Dynamic settings:
+  - **5 or 10 rounds**
+  - Time limits (10s, 20s, 30s, 60s... move with 60–120s)
+- Fun, contextual Discord messages depending on the challenge type
 
-### Smart Map Selection (`data/maps.json`)
-- Weighted random selection (`weight`)
-- Optional cooldown per map (`cooldownDays`)
-- Allowed modes per map (`move`, `nm`, `nmpz`)
-- Recommended modes per map
-- Avoids repeating the same mode as the previous day when possible
-- Limits **Move** challenges to **max 1 per last 7 days** (unless unavoidable)
+![Daily Challenge](docs/challenge.png)
 
-### Rounds & Time Rules
-- **One fixed weekday** (e.g. Wednesday): **10 rounds**
-- **One fixed weekday** (e.g. Monday):  
-  - if NOT Move → **10 seconds per round**
-- **NM / NMPZ on other days**: **20 / 30 / 60 seconds**
-- **Move challenges**: random “clean” values between **60–120s**
-  (60, 75, 90, 105, 120)
 
-### Weekly League (JSON, no database)
-- Stored in `data/league.json`
-- Tracks:
-  - daily challenges
-  - scores per GeoGuessr userId
-  - map metadata and mode
-- Weekly summary:
-  - podium (🥇🥈🥉)
-  - perfect attendance (7/7)
-  - ASCII leaderboard table
-- Yearly summary supported (when you decide to enable it)
+### 🌍 Multi-language Support
+- Bot messages available in multiple languages
+- Easy-to-add translation files
+- Add a new language by creating a JSON file in the translations folder
+- Supported languages: English, Spanish, German, French, Italian, Portuguese
 
-### GeoGuessr ↔ Discord Linking
-A **persistent Discord bot** (separate process) with slash commands:
+### 📊 Results & Tracking
+- Fetches daily highscores from GeoGuessr
+- Stores all data in a single JSON store (`league.json`)
+- Players tracked by **GeoGuessr userId**
+- Late plays supported via **weekly resync**
 
-- `/link geoid:<GeoGuessrUserId>`
-- `/unlink geoid:<...>` or `/unlink discord:<@user>` (admin only)
+### 🏆 Weekly Summary
+- Automatic weekly league (Monday → Sunday)
+- Podium 🥇🥈🥉
+- Perfect attendance (7/7)
+- Extra awards
+- Full ranking table rendered as PNG
+- Weekly resync ensures late players are included
 
-Notes:
-- Uses **IDs**, not nicknames (safe if names change)
-- Replies are **ephemeral** (private)
-- Works even in read-only channels
+### 📅 Monthly & Yearly Summaries
+- Total points
+- Days played
+- Best average score
+- Biggest improvement
+- Most played maps
+- Mode distribution
+- Global yearly ranking
+
+### 🖼️ Table Rendering
+- Weekly tables rendered as **PNG images**
+- Mobile-friendly
+- Country flags (Twemoji)
+- Temporary images auto-deleted after posting
+
+### 👤 Discord ↔ GeoGuessr Linking
+- `/link <geoguessrUserId>`
+- `/unlink` (admin-only)
+- One GeoGuessr ID ↔ one Discord user
+- Stored in `league.json`
+
+### 🔔 Role Mentions
+- Optional `@Daily Challenge` role mention
+- Opt-in notification system
+- Safe mentions via `allowedMentions`
 
 ---
 
-## Requirements
-- Node.js (ESM + TypeScript)
-- npm
-- GeoGuessr account
-- Discord bot + server
+## 🧱 Architecture
+
+- Node.js (ESM) + TypeScript
+- JSON-based storage (no database)
+- Modular structure:
+  - `league/`
+  - `discord/`
+  - `geoguessr/`
+- Express server for manual endpoints
+- Cron jobs
+- PM2 for production
 
 ---
 
-## Setup
+## 📂 Data Format (`league.json`)
 
-### 1) Install dependencies
+```json
+{
+  "weeks": {
+    "2026-01-19": {
+      "weekStart": "2026-01-19",
+      "weekIndex": 12,
+      "days": {
+        "2026-01-21": {
+          "date": "2026-01-21",
+          "dayIndex": 736,
+          "token": "abc123",
+          "mapId": "community_world",
+          "mapName": "A Community World",
+          "mapUrl": "https://www.geoguessr.com/maps/...",
+          "mode": "nm",
+          "rounds": 5,
+          "timeLimit": 30,
+          "scores": {
+            "geoUserId": 23456
+          }
+        }
+      },
+      "postedAt": "2026-01-26T23:00:00.000Z"
+    }
+  },
+  "players": {
+    "geoUserId": {
+      "nick": "PlayerName",
+      "country": "ES",
+      "discordId": "1234567890"
+    }
+  }
+}
+```
+
+---
+
+## 🔐 Environment Variables
+
+Create a `.env` file:
+
+```env
+DISCORD_TOKEN=your_bot_token
+DISCORD_CHANNEL_ID=target_channel_id
+DISCORD_GUILD_ID=server_id
+DISCORD_ROLE_DAILY_ID=role_id_for_mentions
+
+LEAGUE_START_DATE=2024-01-01
+WEEK_INDEX_START=1
+DAY_INDEX_START=1
+WEEKLY_TOP_N=20
+```
+
+---
+
+## 🚀 Useful Commands
+
 ```bash
 npm install
-
-
-Build:
 npm run build
-
-
-data/maps.json
-{
-  "maps": [
-    {
-      "id": "community_world",
-      "name": "A Community World",
-      "url": "https://www.geoguessr.com/maps/62a44b22040f04bd36e8a914",
-      "modes": {
-        "allowed": ["move", "nm", "nmpz"]
-      },
-      "weight": 3,
-      "tags": ["world", "community"]
-    },
-    {
-      "id": "arbitrary_world",
-      "name": "An Arbitrary World",
-      "url": "https://www.geoguessr.com/maps/6089bfcff6a0770001f645dd",
-      "modes": {
-        "allowed": ["move", "nm", "nmpz"],
-        "recommended": ["nmpz"]
-      },
-      "weight": 2,
-      "cooldownDays": 7,
-      "tags": ["world", "varied"]
-    }
-  ]
-}
-
-
-
-Running the Project
-
-Server mode (manual endpoints)
-
+npm run build -- --watch
 npm start
+```
 
+---
 
-Typical endpoints:
+## 🖥️ PM2 (Production)
 
-GET /challenge
+### Install PM2
 
-GET /highscores
+```bash
+sudo npm install -g pm2
+```
 
-GET /weekly?weekStart=YYYY-MM-DD
+### Start Processes
 
-yearly summary endpoint
-curl.exe "http://localhost:25000/yearly?year=2026"
+```bash
+pm2 start dist/server.js --name geodaily -- --standalone
+pm2 start dist/server.js --name geodaily
+pm2 start dist/linkBotMain.js --name geodaily-link
+```
 
-Windows example:
-curl.exe "http://localhost:25000/challenge"
+---
 
+## ⏱️ Cron Mode (PM2)
 
-Standalone mode (internal cron)
+```bash
+pm2 start npm \
+  --name geodaily \
+  --cwd /home/user/daily_challengue/daily-geoguessr-bot \
+  --cron-restart="10 3 * * *" \
+  -- run standalone
 
-If enabled in your fork, the main process can:
+pm2 start npm \
+  --name geodaily-link \
+  --cwd /home/user/daily_challengue/daily-geoguessr-bot \
+  --cron-restart="15 3 * * *" \
+  -- run linkbot
+```
 
-create daily challenges
+---
 
-fetch highscores
+## 🔌 Manual Endpoints
 
-post weekly summaries
+```bash
+curl http://localhost:25000/challenge
+curl http://localhost:25000/highscores
+curl "http://localhost:25000/weekly?weekStart=2026-01-19"
+curl "http://localhost:25000/monthly?year=2026&month=01"
+curl "http://localhost:25000/yearly?year=2026"
+curl "http://localhost:25000/backfill?date=2026-01-21"
+curl "http://localhost:25000/challenge/test?asDate=2026-02-02"
+```
 
-Recommended for production:
+---
 
-define explicit cron schedules (daily / weekly)
+## 📣 Send Custom Message
 
-Discord link bot (required)
+```bash
+token=ADMIN_TOKEN
 
-Must run continuously to handle slash commands:
+curl -X POST "http://localhost:25000/say" \
+  -H "x-admin-token: $token" \
+  -H "Content-Type: text/plain; charset=utf-8" \
+  --data-raw "Hello!"
+```
 
-npm run linkbot
+---
 
+## 🧠 Design Decisions
 
-Commands:
+- JSON instead of DB
+- GeoGuessr userId as primary key
+- Weekly resync
+- Image tables for readability
+- Slash commands + DMs only
 
-/link geoid:<GeoGuessrUserId>
+---
 
-/unlink geoid:<...> (admin)
+## 📝 License
 
-/unlink discord:<@user> (admin)
+MIT — please credit:
 
+- Extended version: Pablo
+- Original concept: sh-mug (https://github.com/sh-mug/daily-geoguessr-bot)
 
-Discord Permissions
-
-Channel can be read-only
-
-Must allow:
-
-Use Application Commands
-
-/unlink can be restricted:
-
-via code (admin ID check)
-
-or via Discord → Integrations → Commands
-
-Notes
-
-GeoGuessr cookies/sessions may expire; re-login if needed.
-
-No database required — league.json is the source of truth.
-
-Designed to be easy to extend (more stats, awards, messages).
-
-
-Scripts
-
-npm start — server mode
-
-npm run linkbot — persistent slash-command bot
-
-npm run build — compile TypeScript
-
-Project Structure (overview)
-
-src/settings.ts — map/mode selection, rounds & time rules
-
-src/challenge.ts — GeoGuessr challenge creation
-
-src/server.ts — Express server / standalone cron
-
-src/league/weeklyStore.ts — league persistence & logic
-
-src/discord/discordPoster.ts — Discord posting
-
-src/discord/linkBot.ts — /link & /unlink
-
-src/linkBotMain.ts — link bot entrypoint
-
-
-
-License
-
-MIT
+Made with ❤️ for GeoGuessr communities
