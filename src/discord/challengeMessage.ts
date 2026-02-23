@@ -3,18 +3,18 @@ type Mode = "Move" | "NM" | "NMPZ";
 type ChallengeMeta = {
     mode: Mode;
     timeLimit: number;
-    rounds: number;
+    roundCount: number;
 };
 
 export function buildChallengeIntro(meta: ChallengeMeta): string {
-    const { mode, timeLimit, rounds } = meta;
+    const { mode, timeLimit, roundCount } = meta;
 
     const lines: string[] = [];
 
     /* =========
        RONDAS
        ========= */
-    if (rounds === 10) {
+    if (roundCount === 10) {
         lines.push("🔟 **Especial 10 rondas** — hoy toca maratón 🏃‍♂️");
     }
 

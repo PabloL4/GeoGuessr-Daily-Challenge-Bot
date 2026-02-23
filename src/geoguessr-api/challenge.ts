@@ -58,7 +58,7 @@ export const createChallenge = async (settings: ChallengeSettings): Promise<Chal
             mapId,
             mapUrl,
             timeLimit: settings.timeLimit,
-            rounds: settings.rounds,
+            roundCount: settings.roundCount,
         }
     } catch (error) {
         console.error('Error creating challenge:', error);

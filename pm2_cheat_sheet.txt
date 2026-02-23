@@ -1,0 +1,72 @@
+PM2 – Chuleta práctica
+🔹 Instalación
+sudo npm install -g pm2
+
+🔹 Arrancar procesos
+Arrancar el bot principal
+pm2 start dist/server.js --name geodaily -- --standalone
+
+Arrancar sin --standalone (modo server)
+pm2 start dist/server.js --name geodaily
+
+Arrancar el bot de link
+pm2 start dist/linkBotMain.js --name geodaily-link
+
+🔹 Ver estado
+pm2 list
+
+🔹 Logs
+Ver logs en tiempo real
+pm2 logs
+
+Ver logs de un proceso concreto
+pm2 logs geodaily
+
+Ver solo las últimas líneas
+pm2 logs geodaily --lines 50
+pm2 logs geodaily --lines 200
+
+🔹 Reiniciar procesos
+Reiniciar un proceso
+pm2 restart geodaily
+
+Reiniciar forzando recarga de .env
+pm2 restart geodaily --update-env
+
+Reiniciar todos
+pm2 restart all
+
+🔹 Parar procesos (sin borrar)
+Parar todos
+pm2 stop all
+
+Parar uno concreto
+pm2 stop geodaily
+
+🔹 Borrar procesos (⚠️ cuidado)
+pm2 delete geodaily
+pm2 delete all
+
+🔹 Guardar y restaurar procesos
+Guardar estado actual
+pm2 save
+
+Restaurar procesos guardados
+pm2 resurrect
+
+🔹 Arranque automático al reiniciar el servidor
+Generar configuración de startup
+pm2 startup
+
+Ejecutar el comando que PM2 te muestra (muy importante)
+sudo env PATH=$PATH:/usr/bin pm2 startup systemd -u TU_USUARIO --hp /home/TU_USUARIO
+
+🔹 Apagar PM2 completamente
+pm2 kill
+
+🔹 Diagnóstico
+Ver detalles de un proceso (restarts, memoria, etc.)
+pm2 describe geodaily
+
+Ver si un puerto está escuchando
+ss -lntp | grep 25000

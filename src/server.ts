@@ -8,12 +8,15 @@ import { postWeeklySummaryToDiscord } from "./discord/index.js";
 import { getPreviousWeekKeyIfMonday, markWeekAsPosted, clearWeek } from "./league/weeklyStore.js";
 import { recordDay } from "./league/weeklyStore.js";
 import { postYearlySummary } from "./yearlySummary.js";
-import { buildChallengeIntro } from "./discord/challengeMessage.js";
+import { postMonthlySummaryToDiscord } from "./monthlySummary.js";
 
 
 dotenv.config();
 const app = express();
 const port = 25000;
+
+let didLogStandalone = false;
+
 
 const toStoreMode = (mode: string): "move" | "nm" | "nmpz" => {
     if (mode === "Move") return "move";
@@ -32,11 +35,13 @@ const challenge = async () => {
             token: ChallengeSettings.token,
             scores: {}, // todavía no hay highscores
             challenge: {
-                mapId: ChallengeSettings.mapId ?? challengePayload.map, // fallback seguro
+                mapId: ChallengeSettings.mapId ?? challengePayload.map,
                 mapName: ChallengeSettings.name,
-                mapUrl:
-                    ChallengeSettings.mapUrl ?? `https://www.geoguessr.com/maps/${challengePayload.map}`,
+                mapUrl: ChallengeSettings.mapUrl ?? `https://www.geoguessr.com/maps/${challengePayload.map}`,
                 mode: toStoreMode(ChallengeSettings.mode),
+
+                roundCount: ChallengeSettings.roundCount ?? challengePayload.roundCount,
+                timeLimit: ChallengeSettings.timeLimit ?? challengePayload.timeLimit,
             },
         });
 
@@ -128,6 +133,24 @@ app.get("/weekly", async (req, res) => {
     }
 });
 
+app.get("/monthly", async (req, res) => {
+    try {
+        const year = Number(req.query.year);
+        const month = Number(req.query.month); // 1..12
+
+        if (!Number.isFinite(year) || !Number.isFinite(month) || month < 1 || month > 12) {
+            return res.status(400).send("Use /monthly?year=2026&month=1 (month=1..12)");
+        }
+
+        await postMonthlySummaryToDiscord(year, month);
+        res.send("ok");
+    } catch (e: any) {
+        console.error("[/monthly] error:", e);
+        res.status(500).send(String(e?.message ?? e));
+    }
+});
+
+
 
 app.get("/yearly", async (req, res) => {
     const year = Number(req.query.year);
@@ -144,32 +167,48 @@ app.get("/yearly", async (req, res) => {
 
 const mode = process.argv[2];
 
+app.listen(port, () => {
+    console.log(`Server listening at http://localhost:${port}`);
+});
+
 if (mode === '--standalone') {
-    console.log('Running in standalone mode.');
-
-    // Diario: crear challenge
-    cron.schedule('0 0 * * *', async () => {
-        await challenge();
-    });
-
-    // Diario: recoger highscores
-    cron.schedule('0 23 * * *', async () => {
+    if (!didLogStandalone) {
+        console.log("Running in standalone mode.");
+        didLogStandalone = true;
+    }
+    // Diario: recoger highscores (17:55)
+    cron.schedule('55 17 * * *', async () => {
         await highscores();
     });
 
-    // Semanal: resumen (domingo 23:10, por ejemplo)
-    cron.schedule('10 23 * * 0', async () => {
+    // Diario: crear challenge (18:00)
+    cron.schedule('0 18 * * *', async () => {
+        await challenge();
+    });
+
+    // Semanal: resumen (domingo 18:05)
+    cron.schedule('5 18 * * 0', async () => {
         await maybePostWeeklySummary();
     });
 
-    // Anual: resumen (1 de enero a las 00:10)          
-    cron.schedule('10 0 1 1 *', async () => {
-    await postYearlySummary(new Date().getFullYear() - 1);
-});
+    // 📅 Resumen mensual — día 1 a las 18:15 (mes anterior)
+    cron.schedule('15 18 1 * *', async () => {
+        const now = new Date();
+        const year = now.getMonth() === 0 ? now.getFullYear() - 1 : now.getFullYear();
+        const month = now.getMonth() === 0 ? 12 : now.getMonth(); // 1–12
 
-} else {
-    app.listen(port, () => {
-        console.log(`Server listening at http://localhost:${port}`);
+        console.log(`[cron] Posting monthly summary for ${year}-${month}`);
+        await postMonthlySummaryToDiscord(year, month);
     });
-}
 
+    // Anual: resumen (1 de enero a las 12:00)
+    cron.schedule('0 12 1 1 *', async () => {
+        await postYearlySummary(new Date().getFullYear() - 1);
+    });
+    // }
+    // else {
+    //     app.listen(port, () => {
+    //         console.log(`Server listening at http://localhost:${port}`);
+    //     });
+    // }
+}

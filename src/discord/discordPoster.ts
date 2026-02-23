@@ -9,46 +9,72 @@ const channelId = process.env.DISCORD_CHANNEL_ID || '';
 const challengeUrl: (challengeId: string) => string = (challengeId: string) => `https://www.geoguessr.com/challenge/${challengeId}`;
 
 function pickOne<T>(arr: T[]): T {
-  return arr[Math.floor(Math.random() * arr.length)];
+    return arr[Math.floor(Math.random() * arr.length)];
 }
 const ROUND_10_MESSAGES = [
-  "🔟 **Especial 10 rondas** — hoy toca maratón 🏃‍♂️",
-  "🔟 **Día largo** — 10 rondas para los valientes 💪",
-  "🔟 **Edición extendida** — que no se diga que fue corto 😏, That's what she said",
-  "🔟 **Resistencia épica** — 10 rondas para probar que no eres de los que se rinden fácil 😉",
+    "🔟 **Especial 10 rondas** — hoy toca maratón 🏃‍♂️",
+    "🔟 **Día largo** — 10 rondas para los valientes 💪",
+    "🔟 **Edición extendida** — que no se diga que fue corto 😏, That's what she said",
+    "🔟 **Resistencia épica** — 10 rondas para probar que no eres de los que se rinden fácil 😉",
+    "🔟 **Maratón de héroes** — 10 rondas para forjar leyendas, ¡no pares ahora! 🏆",
+    "🔟 **Rondas interminables** — como esa serie que no puedes soltar, ¡sigue el ritmo! 📺",
+    "🔟 **Odisea global** — 10 rondas cruzando continentes, ¿dónde te deja el Street View esta vez? 🌍",
+    "🔟 **Desafío decatlón** — 10 paradas en el mapa para coronarte como el rey de la geografía 👑",
 ];
 
 const TIME_10_MESSAGES = [
-  "⚡ **Rondas relámpago** — ¡decide en 10 segundos!",
-  "⚡ **Modo rayo** — parpadea y ya has elegido 😅",
-  "⚡ **Velocidad máxima** — sin tiempo para dudar",
-  "⚡ **Intuición express** — 10 segundos para que tu instinto tome el mando 🧠",
+    "⚡ **Rondas relámpago** — ¡decide en 10 segundos!",
+    "⚡ **Modo rayo** — parpadea y ya has elegido 😅",
+    "⚡ **Velocidad máxima** — sin tiempo para dudar",
+    "⚡ **Intuición express** — 10 segundos para que tu instinto tome el mando 🧠",
+    "⚡ **Flash decision** — 10s y listo, ¡como un superhéroe en acción! 🦸‍♂️",
+    "⚡ **Tic-tac turbo** — cuenta hasta 10 y elige, o el reloj te elige a ti ⏰",
+    "⚡ **Pinchazo rápido** — 10s para clavar el pin antes de que el mapa se mueva 🗺️",
+    "⚡ **Intuición GPS** — ¡elige ya o el globo terráqueo te da la vuelta! 🔄",
 ];
 
 const FAST_MESSAGES = [
-  "🔥 **Muy rápido** — sin tiempo para dudar",
-  "🔥 **Presión alta** — piensa rápido o sufre 😈",
-  "🔥 **Presión alta** — piensa rápido o el mapa te ganará la partida 😏",
-  "🔥 **Acelerador a tope** — reacciona ya, que el mundo no espera por nadie 🚀",
+    "🔥 **Muy rápido** — sin tiempo para dudar",
+    "🔥 **Presión alta** — piensa rápido o sufre 😈",
+    "🔥 **Presión alta** — piensa rápido o el mapa te ganará la partida 😏",
+    "🔥 **Acelerador a tope** — reacciona ya, que el mundo no espera por nadie 🚀",
+    "🔥 **Modo infierno** — decisiones a quemarropa, ¡o ardes o brillas! 🌋",
+    "🔥 **Turbo caos** — rápido como un rayo, o el juego te deja en el polvo 💨",
+    "🔥 **Sprint callejero** — ¡pincha ya o las señales de tráfico te despistan! 🚦",
+    "🔥 **Caos geográfico** — reacciona al rojo vivo, que el Street View no perdona 🔥🗺️",
 ];
 
 const MEDIUM_MESSAGES = [
-  "⏱️ **Ritmo ágil** — piensa rápido",
-  "⏱️ **Velocidad media** — ni sprint ni paseo",
-  "⏱️ **Equilibrio perfecto** — rápido lo justo, sin volverte loco por un giro 🌀",
+    "⏱️ **Ritmo ágil** — piensa rápido",
+    "⏱️ **Velocidad media** — ni sprint ni paseo",
+    "⏱️ **Equilibrio perfecto** — rápido lo justo, sin volverte loco por un giro 🌀",
+    "⏱️ **Paso constante** — avanza sin prisas locas, pero sin quedarte atrás 🏃‍♂️",
+    "⏱️ **Flujo natural** — el tiempo justo para un café mental ☕",
+    "⏱️ **Marcha media** — ni héroe ni villano, solo tú dominando el centro 🎯",
+    "⏱️ **Ritmo explorador** — analiza las placas y avanza, sin dramas ⏱️🌆",
+    "⏱️ **Equilibrio mundial** — tiempo para otear horizontes sin perder el hilo 🏔️",
 ];
 
 const CALM_MESSAGES = [
-  "😌 **Día tranquilito** — respira y observa",
-  "😌 **Con calma** — hoy se puede pensar bien",
-  "😌 **Sesión relajada** — sin prisas",
-  "😌 **Pausa estratégica** — tómate tu tiempo, que las mejores jugadas vienen solas 🌅",
+    "😌 **Día tranquilito** — respira y observa",
+    "😌 **Con calma** — hoy se puede pensar bien",
+    "😌 **Sesión relajada** — sin prisas",
+    "😌 **Pausa estratégica** — tómate tu tiempo, que las mejores jugadas vienen solas 🌅",
+    "😌 **Viento suave** — fluye con el juego, sin forzar el destino 🌬️",
+    "😌 **Momento zen** — observa, decide, conquista... todo a su ritmo 🧘‍♂️",
+    "😌 **Paseo virtual** — disfruta las vistas del mapa como un turista zen ✈️",
+    "😌 **Calma cartográfica** — el mundo espera, elige con el alma serena 🗺️😊",
 ];
 
 const RELAX_MESSAGES = [
-  "🧘 **Modo relax** — explora con calma",
-  "🧘 **Tiempo de sobra** — disfruta el paisaje",
-  "🧘 **Pereza productiva** — avanza despacio, que a veces el atajo es el error más grande 😌",
+    "🧘 **Modo relax** — explora con calma",
+    "🧘 **Tiempo de sobra** — disfruta el paisaje",
+    "🧘 **Pereza productiva** — avanza despacio, que a veces el atajo es el error más grande 😌",
+    "🧘 **Siesta estratégica** — descansa la mente, las ideas geniales llegan solas 💤",
+    "🧘 **Paseo filosófico** — cada paso cuenta, sin correr por correr 🌳",
+    "🧘 **Ola zen** — déjate llevar por el flujo, el mapa espera por ti 🌊",
+    "🧘 **Meditación geográfica** — contempla el horizonte, las coordenadas se alinean solas 🌌",
+    "🧘 **Viaje lento** — sorbe el paisaje como un té, GeoGuessr al ritmo de tu paz ☕🗺️",
 ];
 
 
@@ -65,6 +91,7 @@ export const postToDiscord = async (message: string, imagePath?: string) => {
     client.once('ready', async () => {
         const channel = await client.channels.fetch(channelId);
         if (channel instanceof TextChannel) {
+            console.log("[discord] posting to channelId =", channelId);
             await channel.send({
                 content: message,
                 files: imagePath ? [imagePath] : [],
@@ -81,13 +108,13 @@ export const postToDiscord = async (message: string, imagePath?: string) => {
 export const postChallengeToDiscord = async (settings: ChallengeSettingsForPost) => {
     const timestamp = Math.floor(Date.now() / 1000);
 
-    const rounds = settings.rounds ?? 5;
+    const roundCount = settings.roundCount ?? 5;
     const timeLimit = settings.timeLimit ?? 60;
 
     // Texto “gracioso”
-const extraLines: string[] = [];
+    const extraLines: string[] = [];
 
-    if (rounds === 10) {
+    if (roundCount === 10) {
         extraLines.push(pickOne(ROUND_10_MESSAGES));
     }
     if (timeLimit === 10) {
@@ -107,7 +134,7 @@ const extraLines: string[] = [];
     const message =
         `## 🌍 Desafío diario — <t:${timestamp}:D>${intro}🔗 Enlace: ${challengeUrl(settings.token)}
 🗺️ Mapa: ${settings.name}
-🎮 Modo: ${settings.mode} (${timeLimit}s) — ${rounds} rondas`;
+🎮 Modo: ${settings.mode} (${timeLimit}s) — ${roundCount} rondas`;
 
     await postToDiscord(message);
 };
@@ -138,6 +165,6 @@ export const postResultToDiscord: (ranking: ChallengeHighscores) => Promise<void
         ${leaderboard}
         \`\`\``;
 
-        await postToDiscord(message);
+    await postToDiscord(message);
 }
 

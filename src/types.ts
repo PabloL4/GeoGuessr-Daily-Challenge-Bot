@@ -8,7 +8,7 @@ export interface ChallengeSettings {
     map: string;
     mode: GameMode;
     timeLimit: number;
-    rounds: number;
+    roundCount: number;
 }
 export interface ChallengePayload {
     map: string;
@@ -16,7 +16,7 @@ export interface ChallengePayload {
     forbidRotating: boolean;
     forbidZooming: boolean;
     timeLimit: number;
-    rounds: number;
+    roundCount: number;
 };
 
 export interface ChallengeSettingsForPost {
@@ -26,7 +26,7 @@ export interface ChallengeSettingsForPost {
 
     // NEW
     timeLimit?: number;
-    rounds?: number;
+    roundCount?: number;
 
     mapId?: string;
     mapUrl?: string;

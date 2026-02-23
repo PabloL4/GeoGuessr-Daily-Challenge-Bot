@@ -21,6 +21,9 @@ export type LeagueDay = {
     mapUrl?: string;
     mode?: "move" | "nm" | "nmpz";
 
+    roundCount?: number;
+    timeLimit?: number;
+
     scores: DailyScores;
 };
 
@@ -141,6 +144,8 @@ export function recordDay(params: {
         mapName: string;
         mapUrl: string;
         mode: "move" | "nm" | "nmpz";
+        roundCount: number;
+        timeLimit: number;
     };
 }): void {
     const store = readStore();
@@ -184,6 +189,8 @@ export function recordDay(params: {
         mapName: params.challenge?.mapName ?? existingDay?.mapName,
         mapUrl: params.challenge?.mapUrl ?? existingDay?.mapUrl,
         mode: params.challenge?.mode ?? existingDay?.mode,
+        roundCount: params.challenge?.roundCount ?? existingDay?.roundCount,
+        timeLimit: params.challenge?.timeLimit ?? existingDay?.timeLimit,
 
         scores: params.scores,
     };
@@ -269,7 +276,7 @@ export function buildWeeklyTable(weekStartKey: string): { title: string; table: 
         const player = store.players[r.name]; // geoId
         const rawNick = player?.nick ?? r.name;
         const maxNick = Number(process.env.MAX_NICK_LEN ?? "16");
-        const nick = rawNick.length > maxNick ? rawNick.slice(0, maxNick - 1) + "…" : rawNick; 
+        const nick = rawNick.length > maxNick ? rawNick.slice(0, maxNick - 1) + "…" : rawNick;
         const country = (player?.country ?? "").toUpperCase(); // ISO2 ya normalizado
         const flag = flagEmoji(country);
 
@@ -282,7 +289,8 @@ export function buildWeeklyTable(weekStartKey: string): { title: string; table: 
     });
 
     // Headers
-    const headers = ["#", "NOMBRE", "D1", "D2", "D3", "D4", "D5", "D6", "D7", "TOTAL"];
+    // const headers = ["#", "NOMBRE", "D1", "D2", "D3", "D4", "D5", "D6", "D7", "TOTAL"];
+    const headers = ["#", "NOMBRE", ...dCols.map((n) => `D${n}`), "TOTAL"];
 
     // Anchos dinámicos + mínimos
     const visibleLen = (s: string) =>
@@ -430,6 +438,55 @@ export function markWeekAsPosted(weekStartKey: string, when = new Date()): void 
     week.postedAt = when.toISOString();
     store.weeks[weekStartKey] = week;
     writeStore(store);
+}
+
+export type WeeklyBestDaily = {
+    geoId: string;
+    score: number;
+    dayIndex: number;
+    date: string;      // YYYY-MM-DD
+    roundCount: number;
+};
+
+export function getWeeklyBestDailyByRounds(
+    weekStartKey: string,
+    targetRounds: number
+): WeeklyBestDaily | null {
+    const store = readStore();
+    const week = store.weeks[weekStartKey];
+    if (!week) return null;
+
+    // Monday..Sunday
+    const monday = new Date(weekStartKey);
+    monday.setHours(0, 0, 0, 0);
+
+    const dates: string[] = [];
+    for (let i = 0; i < 7; i++) {
+        const d = new Date(monday);
+        d.setDate(d.getDate() + i);
+        dates.push(toYmd(d));
+    }
+
+    let best: WeeklyBestDaily | null = null;
+
+    for (const date of dates) {
+        const day = week.days[date];
+        if (!day) continue;
+
+        const roundCount = day.roundCount;
+        if (!Number.isFinite(roundCount) || roundCount !== targetRounds) continue;
+
+        const dayIndex = day.dayIndex ?? getDayIndexFor(new Date(date));
+
+        for (const [geoId, score] of Object.entries(day.scores ?? {})) {
+            if (!Number.isFinite(score)) continue;
+
+            if (!best || score > best.score) {
+                best = { geoId, score: score as number, dayIndex, date, roundCount };
+            }
+        }
+    }
+    return best;
 }
 
 

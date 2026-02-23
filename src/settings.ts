@@ -21,8 +21,8 @@ export function createChallengePayload(settings: ChallengeSettings): ChallengePa
     /* =========
        ROUNDS
        ========= */
-    const rounds = weekday === TEN_ROUNDS_DAY ? 10 : 5;
-
+    const roundCount = weekday === TEN_ROUNDS_DAY ? 10 : 5;
+    
     /* =========
        TIME LIMIT
        ========= */
@@ -47,7 +47,7 @@ export function createChallengePayload(settings: ChallengeSettings): ChallengePa
         forbidRotating: mode === "NMPZ",
         forbidZooming: mode === "NMPZ",
         timeLimit,
-        rounds,
+        roundCount,
     };
 }
 
@@ -202,7 +202,7 @@ export async function defaultChallenge(): Promise<ChallengeSettings> {
 
     // ✅ NEW: rounds + timeLimit rules
     const weekday = getWeekdayUTC();
-    const rounds = weekday === TEN_ROUNDS_DAY ? 10 : 5;
+    const roundCount = weekday === TEN_ROUNDS_DAY ? 10 : 5;
 
     let timeLimit: number;
     if (mode === "Move") {
@@ -213,7 +213,7 @@ export async function defaultChallenge(): Promise<ChallengeSettings> {
         timeLimit = randomFrom([20, 30, 60]);
     }
 
-    return { map, mode, timeLimit, rounds };
+    return { map, mode, timeLimit, roundCount };
 }
 
 
