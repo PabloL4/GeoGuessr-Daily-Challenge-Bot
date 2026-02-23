@@ -1,12 +1,55 @@
 import { createCanvas } from "canvas";
 import fs from "fs";
 import path from "path";
+import { loadImage } from "canvas";
+import fetch from "node-fetch";
 
 type RenderTableOptions = {
     title?: string;
     lines: string[];
     outputFile: string;
 };
+
+const FLAG_CACHE_DIR = path.join(process.cwd(), "data", "flags");
+
+function ensureFlagCacheDir() {
+    if (!fs.existsSync(FLAG_CACHE_DIR)) fs.mkdirSync(FLAG_CACHE_DIR, { recursive: true });
+}
+
+// Convierte "DE" -> "1f1e9-1f1ea" (formato Twemoji)
+function countryCodeToTwemojiKey(cc: string): string | null {
+    const c = cc.trim().toUpperCase();
+    if (!/^[A-Z]{2}$/.test(c)) return null;
+
+    const base = 0x1f1e6;
+    const A = "A".charCodeAt(0);
+
+    const cp1 = base + (c.charCodeAt(0) - A);
+    const cp2 = base + (c.charCodeAt(1) - A);
+
+    return `${cp1.toString(16)}-${cp2.toString(16)}`;
+}
+
+async function getFlagPngPath(cc: string): Promise<string | null> {
+    const key = countryCodeToTwemojiKey(cc);
+    if (!key) return null;
+
+    ensureFlagCacheDir();
+
+    const filePath = path.join(FLAG_CACHE_DIR, `${key}.png`);
+    if (fs.existsSync(filePath)) return filePath;
+
+    // Twemoji CDN
+    const url = `https://cdnjs.cloudflare.com/ajax/libs/twemoji/14.0.2/72x72/${key}.png`;
+
+    const res = await fetch(url);
+    if (!res.ok) return null;
+
+    const buf = Buffer.from(await res.arrayBuffer());
+    fs.writeFileSync(filePath, buf);
+
+    return filePath;
+}
 
 export async function renderTableImage({
     title,
@@ -57,32 +100,53 @@ const emojiFont = `"Segoe UI Emoji", "Apple Color Emoji", "Noto Color Emoji"`;
     ctx.font = `${fontSize}px monospace`;
     ctx.fillStyle = "#e5e7eb";
 
+ctx.fillStyle = "#e5e7eb";
+
+const flagSize = 28;   // tamaño icono bandera
+
 for (const line of lines) {
-    // Detecta banderas al inicio: 🇪🇸 (son 2 codepoints)
-    const m = line.match(/^(\p{RI}\p{RI})\s+(.*)$/u);
+    // Detecta marcador al inicio del "nombre": [FR] Nick...
+    // OJO: tus líneas empiezan por rank y espacios, así que buscamos el primer [CC]
+    const m = line.match(/\[([A-Z]{2})\]/);
 
     if (m) {
-        const flag = m[1];
-        const rest = m[2];
+        const cc = m[1];
 
-        // 1) bandera en fuente emoji
-        ctx.font = `${fontSize}px ${emojiFont}`;
-        ctx.fillText(flag, padding, y + fontSize);
+        // Partimos la línea en: antes + marcador + después
+        const before = line.slice(0, m.index);
+        const after = line.slice((m.index ?? 0) + m[0].length);
 
-        // medir ancho de bandera para colocar el resto
-        const flagW = ctx.measureText(flag + " ").width;
-
-        // 2) resto en monospace
+        // Dibuja "before" en monospace
         ctx.font = `${fontSize}px ${monoFont}`;
-        ctx.fillText(rest, padding + flagW, y + fontSize);
+        ctx.fillText(before, padding, y + fontSize);
+
+        // Calcula x donde va la bandera
+        const beforeW = ctx.measureText(before).width;
+
+        // Descarga/carga bandera
+        const flagPath = await getFlagPngPath(cc);
+        if (flagPath) {
+            const img = await loadImage(flagPath);
+            // Y de la bandera centrada en la línea
+            ctx.drawImage(img, padding + beforeW, y + (lineHeight - flagSize) / 2, flagSize, flagSize);
+        } else {
+            // fallback: si no hay imagen, escribe CC
+            ctx.fillText(cc, padding + beforeW, y + fontSize);
+        }
+
+        // Dibuja el resto, desplazado para que no pise la bandera
+        const gap = 10;
+        const offsetX = beforeW + flagSize + gap;
+        ctx.fillText(after, padding + offsetX, y + fontSize);
     } else {
-        // normal (sin bandera)
+        // Línea normal
         ctx.font = `${fontSize}px ${monoFont}`;
         ctx.fillText(line, padding, y + fontSize);
     }
 
     y += lineHeight;
 }
+
 
     const outPath = path.resolve(outputFile);
     const buffer = canvas.toBuffer("image/png");

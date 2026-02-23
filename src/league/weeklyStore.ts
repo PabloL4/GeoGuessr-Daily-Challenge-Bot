@@ -271,12 +271,12 @@ const printed = sliced.map((r, idx) => {
     const country = (player?.country ?? "").toUpperCase(); // ISO2 ya normalizado
     const flag = flagEmoji(country);
 
-    const nameWithFlag = flag ? `${flag} ${nick}` : nick;
-
+    
     const cells = r.perDay.map((v) => (v == null ? "-" : fmt(v)));
     const totalStr = fmt(r.total);
-
-    return { rank: idx + 1, nick, flag, nameWithFlag, cells, totalStr };
+    const cc = country || "";               // "FR", "ES", ...
+    const nameWithFlag = cc ? `[${cc}] ${nick}` : nick;
+    return { rank: idx + 1, nick, cc, nameWithFlag, cells, totalStr };
 });
 
     // Headers
