@@ -143,7 +143,7 @@ npm start
 
 ## 🔐 Environment Variables
 
-Create a `.env` file:
+Create a `.env` file (or modify the .env_example):
 
 ```env
 DISCORD_TOKEN=your_bot_token
@@ -158,6 +158,46 @@ WEEKLY_TOP_N=20
 ```
 
 ---
+
+## 🍪 Geoguessr Cookie Requirement
+
+This project requires a valid `_ncfa` cookie from GeoGuessr in order to fetch certain data.
+
+Instructions to obtain your `_ncfa` cookie are available here:
+
+https://github.com/SafwanSipai/geo-insight?tab=readme-ov-file#getting-your-_ncfa-cookie
+
+### Setup
+
+1. Follow the instructions in the link above to obtain your `_ncfa` cookie.
+2. In the root of this project, locate the file:
+
+```
+cookie_example.txt
+```
+
+3. Rename it to:
+
+```
+cookie.txt
+```
+
+4. Paste your `_ncfa` cookie value inside `cookie.txt`.
+
+The file should contain **only the cookie value**, nothing else.
+
+Example:
+
+```
+_ncfa=your_cookie_value_here
+```
+
+⚠️ Important:
+- Do NOT commit `cookie.txt` to version control.
+- Make sure `cookie.txt` is included in your `.gitignore`.
+- Keep your cookie private.
+
+Without a valid cookie, GeoGuessr API requests will fail.
 
 ## 🚀 Useful Commands
 
