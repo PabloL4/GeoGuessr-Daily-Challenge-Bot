@@ -1,6 +1,8 @@
 import dotenv from 'dotenv';
 import express from 'express';
 import cron from 'node-cron';
+import fs from "node:fs";
+import path from "node:path";
 import { postChallengeToDiscord, postResultToDiscord } from './discord/index.js';
 import { createChallenge, getHighscores } from './geoguessr-api/index.js';
 import { defaultChallenge } from './settings.js';
@@ -9,6 +11,9 @@ import { getPreviousWeekKeyIfMonday, markWeekAsPosted, clearWeek } from "./leagu
 import { recordDay } from "./league/weeklyStore.js";
 import { postYearlySummary } from "./yearlySummary.js";
 import { postMonthlySummaryToDiscord } from "./monthlySummary.js";
+import { getHighscoresByToken } from "./geoguessr-api/highscores.js";
+import { resyncWeek } from "./league/resyncWeek.js";
+
 
 
 dotenv.config();
@@ -83,6 +88,7 @@ const highscores = async () => {
 const maybePostWeeklySummary = async (forcedWeekStart?: string) => {
     if (forcedWeekStart) {
         try {
+            await resyncWeek(forcedWeekStart);
             await postWeeklySummaryToDiscord(forcedWeekStart);
             markWeekAsPosted(forcedWeekStart);
         } catch (err) {
@@ -96,6 +102,7 @@ const maybePostWeeklySummary = async (forcedWeekStart?: string) => {
     if (!weekKey) return;
 
     try {
+        await resyncWeek(weekKey);
         await postWeeklySummaryToDiscord(weekKey);
         markWeekAsPosted(weekKey);
     } catch (err) {
@@ -162,6 +169,84 @@ app.get("/yearly", async (req, res) => {
     await postYearlySummary(year);
     res.send(`Yearly summary for ${year} posted.`);
 });
+
+
+//rellenar puntos de un challenge pasado != ayer
+app.get("/backfill", async (req, res) => {
+    try {
+        const date = String(req.query.date ?? "").trim(); // YYYY-MM-DD
+        if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+            res.status(400).send("Missing/invalid date. Use /backfill?date=YYYY-MM-DD");
+            return;
+        }
+
+        const storePath = path.join(process.cwd(), "data", "league.json");
+        if (!fs.existsSync(storePath)) {
+            res.status(404).send("league.json not found");
+            return;
+        }
+
+        const store = JSON.parse(fs.readFileSync(storePath, "utf8")) as any;
+
+        // ✅ Buscar el día en todas las semanas (sin depender de weekStart)
+        let foundWeekKey: string | null = null;
+        let dayObj: any = null;
+
+        for (const [weekKey, week] of Object.entries<any>(store.weeks ?? {})) {
+            const d = week?.days?.[date];
+            if (d?.token) {
+                foundWeekKey = weekKey;
+                dayObj = d;
+                break;
+            }
+        }
+
+        if (!dayObj?.token) {
+            res.status(404).send(`Day not found or missing token for ${date}`);
+            return;
+        }
+
+        const token = String(dayObj.token);
+
+        const highscores = await getHighscoresByToken(token);
+        if (!highscores?.items?.length) {
+            res.status(502).send("No highscores items returned");
+            return;
+        }
+
+        const scores: Record<string, number> = {};
+        const players: Record<string, { nick: string; country?: string }> = {};
+
+        for (const entry of highscores.items) {
+            const geoId = entry.game.player.id;
+            const nick = entry.game.player.nick;
+            const country = entry.game.player.countryCode?.toUpperCase();
+            const amount = Number(entry.game.player.totalScore.amount);
+
+            scores[geoId] = Number.isFinite(amount) ? amount : 0;
+            players[geoId] = { nick, country };
+        }
+
+        // usar la fecha del día que rellenamos
+        const resultDate = new Date(`${date}T12:00:00Z`);
+
+        recordDay({
+            date: resultDate,
+            token,
+            scores,
+            players,
+            // no tocamos challenge: mantiene mapId/mapName/mode/rounds/timeLimit ya guardados
+        });
+
+        res.send(
+            `OK backfilled ${date} (week=${foundWeekKey}) with ${highscores.items.length} players`
+        );
+    } catch (e: any) {
+        console.error(e);
+        res.status(500).send(e?.message ?? "Error");
+    }
+});
+
 
 
 

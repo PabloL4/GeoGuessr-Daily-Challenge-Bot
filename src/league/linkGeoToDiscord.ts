@@ -50,7 +50,7 @@ export function linkGeoToDiscord(geoIdRaw: string, discordId: string): LinkResul
     store.players[geoId] ??= {};
     store.players[geoId].discordId = discordId;
 
-    fs.writeFileSync(STORE_PATH, JSON.stringify(store, null, 2), "utf8");
+    // fs.writeFileSync(STORE_PATH, JSON.stringify(store, null, 2), "utf8");
 
     return { ok: true, status: existingDiscordForGeo ? "already_linked" : "linked" };
 }
@@ -71,7 +71,11 @@ export function unlinkGeoFromDiscordByGeoId(geoIdRaw: string): UnlinkResult {
 
     delete store.players[geoId].discordId;
 
-    fs.writeFileSync(STORE_PATH, JSON.stringify(store, null, 2), "utf8");
+    // fs.writeFileSync(STORE_PATH, JSON.stringify(store, null, 2), "utf8");
+    const tmp = `${STORE_PATH}.tmp`;
+    fs.writeFileSync(tmp, JSON.stringify(store, null, 2), "utf8");
+    fs.renameSync(tmp, STORE_PATH);
+
     return { ok: true, geoId };
 }
 

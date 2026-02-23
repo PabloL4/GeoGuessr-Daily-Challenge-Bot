@@ -12,6 +12,20 @@ pm2 start dist/server.js --name geodaily
 Arrancar el bot de link
 pm2 start dist/linkBotMain.js --name geodaily-link
 
+Cronificados
+============
+pm2 start npm \
+  --name geodaily \
+  --cwd /home/pablo/daily_challengue/daily-geoguessr-bot \
+  --cron-restart="10 3 * * *" \
+  -- run start -- --standalone
+
+pm2 start npm \
+  --name geodaily-link \
+  --cwd /home/pablo/daily_challengue/daily-geoguessr-bot \
+  --cron-restart="15 3 * * *" \
+  -- run linkbot
+
 🔹 Ver estado
 pm2 list
 

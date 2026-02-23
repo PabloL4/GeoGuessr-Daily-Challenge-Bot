@@ -55,10 +55,16 @@ function readStore(): Store {
     return { weeks: parsed.weeks ?? {}, players: parsed.players ?? {} };
 }
 
+// function writeStore(store: Store): void {
+//     console.log("[league] writeStore STORE_PATH =", STORE_PATH, "weeks =", Object.keys(store.weeks));
+//     ensureDataDir();
+//     fs.writeFileSync(STORE_PATH, JSON.stringify(store, null, 2), "utf-8");
+// }
 function writeStore(store: Store): void {
-    console.log("[league] writeStore STORE_PATH =", STORE_PATH, "weeks =", Object.keys(store.weeks));
     ensureDataDir();
-    fs.writeFileSync(STORE_PATH, JSON.stringify(store, null, 2), "utf-8");
+    const tmp = `${STORE_PATH}.tmp`;
+    fs.writeFileSync(tmp, JSON.stringify(store, null, 2), "utf-8");
+    fs.renameSync(tmp, STORE_PATH); // replace atómico en la práctica
 }
 
 // --- Date helpers (Monday-based) ---
@@ -191,8 +197,8 @@ export function recordDay(params: {
         mode: params.challenge?.mode ?? existingDay?.mode,
         roundCount: params.challenge?.roundCount ?? existingDay?.roundCount,
         timeLimit: params.challenge?.timeLimit ?? existingDay?.timeLimit,
-
-        scores: params.scores,
+        
+        scores: { ...(existingDay?.scores ?? {}), ...(params.scores ?? {}) },
     };
 
 

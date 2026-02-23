@@ -2,6 +2,8 @@ import { Client, GatewayIntentBits, TextChannel } from 'discord.js';
 import dotenv from 'dotenv';
 import { ChallengeHighscores, ChallengeSettingsForPost } from '../types.js';
 import fs from "node:fs";
+import { buildSimpleRankingTable } from "../league/buildSimpleRankingTable.js";
+import { renderTableImage } from "../discord/renderTableImage.js";
 
 dotenv.config();
 
@@ -176,31 +178,34 @@ export const postChallengeToDiscord = async (settings: ChallengeSettingsForPost)
 };
 
 
-export const postResultToDiscord: (ranking: ChallengeHighscores) => Promise<void> = async (ranking: ChallengeHighscores) => {
-    const leaderboard = ranking.highscores.items.slice(0, 6)
+export const postResultToDiscord = async (ranking: ChallengeHighscores) => {
+    const leaderboard = ranking.highscores.items
         .map((entry: any, index: number) => {
             const position = `${index + 1}º`;
             const name = entry.game.player.nick;
-            const score = Number(entry.game.player.totalScore.amount)
-                .toLocaleString('es-ES');
+            const score = Number(entry.game.player.totalScore.amount).toLocaleString("es-ES");
             return `${position} ${name} – ${score} pts`;
         })
-        .join('\n');
+        .join("\n");
 
+    const totalScore = ranking.highscores.items.reduce(
+        (acc: number, entry: any) => acc + Number(entry.game.player.totalScore.amount),
+        0
+    );
 
-    const totalScore = ranking.highscores.items
-        .reduce((acc: number, entry: any) => acc + parseInt(entry.game.player.totalScore.amount, 10), 0);
+    const average = Math.round(totalScore / ranking.highscores.items.length);
 
-    const average = totalScore / ranking.highscores.items.length;
-
-    const message = `## 📊 Resultados del desafío — <t:${ranking.timestamp}:D>
-        🔗 Enlace: ${challengeUrl(ranking.token)}
-        📈 Puntuación media: ${Math.round(average)}
-        🏆 Ranking:
-        \`\`\`
-        ${leaderboard}
-        \`\`\``;
+    // ⚠️ importante: sin indentación en el template literal
+    const message =
+        `## 📊 Resultados del desafío — <t:${ranking.timestamp}:D>
+🔗 Enlace: ${challengeUrl(ranking.token)}
+📈 Puntuación media: ${average}
+🏆 Ranking:
+\`\`\`
+${leaderboard}
+\`\`\``;
 
     await postToDiscord(message);
 }
+
 

@@ -221,6 +221,8 @@ export async function renderTableImage({
     }
 
     const outPath = path.resolve(outputFile);
+    fs.mkdirSync(path.dirname(outPath), { recursive: true }); // ✅ crea data/tmp si no existe
+
     const buffer = canvas.toBuffer("image/png");
     fs.writeFileSync(outPath, buffer);
 

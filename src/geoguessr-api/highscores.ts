@@ -53,3 +53,20 @@ export const getHighscores = async (): Promise<ChallengeHighscores | undefined> 
     }
     return undefined;
 };
+
+export const getHighscoresByToken = async (token: string): Promise<any | undefined> => {
+    try {
+        const cookie = await loginAndGetCookie();
+        const options = createRequestOptions("GET", cookie);
+
+        const response = await fetch(highscoresUrl(token), options as any);
+        console.log("Highscores fetched:", response.statusText);
+
+        const responseJson = await response.json();
+        return responseJson;
+    } catch (error) {
+        console.error("Error getting highscores by token:", error);
+    }
+    return undefined;
+};
+
