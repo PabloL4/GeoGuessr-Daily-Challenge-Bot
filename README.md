@@ -9,6 +9,47 @@ A fully automated Discord bot for managing **daily GeoGuessr challenges**, track
 This project is based on (and heavily extended from) `daily-geoguessr-bot` (by sh-mug: https://github.com/sh-mug/daily-geoguessr-bot), rewritten in **Node.js + TypeScript (ESM)** with a focus on automation, data integrity, and long-term league tracking.
 
 ---
+## 📋 Prerequisites
+
+Before installing the bot, make sure you have:
+
+### 1️⃣ Discord Bot Application
+- A Discord account
+- A Discord application with a bot added to it  
+- A bot token generated from the Discord Developer Portal  
+- The bot invited to your server with the required permissions  
+
+You can create and manage your bot here:  
+https://discord.com/developers/applications
+
+Required permissions typically include:
+- Send Messages
+- Attach Files
+- Use Slash Commands
+- Embed Links
+- Manage Roles (if using role mentions)
+
+---
+
+### 2️⃣ GeoGuessr Account
+- A valid GeoGuessr account  
+- An active subscription that allows you to create challenges  
+
+Without a subscription, challenge creation will fail.
+
+---
+
+### 3️⃣ Node.js
+- Node.js 20+ recommended  
+- npm installed  
+
+Check your version:
+
+```bash
+node -v
+npm -v
+```
+---
 
 ## 📦 Installation
 
