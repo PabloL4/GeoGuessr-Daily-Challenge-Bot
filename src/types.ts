@@ -39,11 +39,11 @@ interface HighscoresResponse {
         {
             game: {
                 player: {
+                    id: string;
                     nick: string;
-                    totalScore: {
-                        amount: string;
-                    }
-                }
+                    countryCode?: string;
+                    totalScore: { amount: string };
+                };
             }
         }
     ];

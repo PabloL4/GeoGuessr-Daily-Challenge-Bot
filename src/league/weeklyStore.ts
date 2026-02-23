@@ -267,6 +267,44 @@ export function getWeeklyPodium(weekStartKey: string): Array<{ name: string; tot
     return rows.slice(0, 3);
 }
 
+export function getWeeklyPerfectAttendance(weekStartKey: string): string[] {
+    const store = readStore();
+    const week = store.weeks[weekStartKey];
+    if (!week) return [];
+
+    const monday = new Date(weekStartKey);
+    monday.setHours(0, 0, 0, 0);
+
+    const dates: string[] = [];
+    for (let i = 0; i < 7; i++) {
+        const d = new Date(monday);
+        d.setDate(d.getDate() + i);
+        dates.push(toYmd(d));
+    }
+
+    // Gather all players who appeared at least once
+    const players = new Set<string>();
+    for (const d of dates) {
+        const day = week.days[d];
+        if (!day) continue;
+        Object.keys(day.scores).forEach((p) => players.add(p));
+    }
+
+    // Keep only players who have a score entry for every day
+    const perfect: string[] = [];
+    for (const name of players) {
+        const playedAll = dates.every((d) => {
+            const day = week.days[d];
+            if (!day) return false;
+            return Object.prototype.hasOwnProperty.call(day.scores, name);
+        });
+        if (playedAll) perfect.push(name);
+    }
+
+    return perfect;
+}
+
+
 
 export function clearWeek(weekStartKey: string): void {
     const store = readStore();

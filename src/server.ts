@@ -36,11 +36,19 @@ const highscores = async () => {
     await postResultToDiscord(hs);
 
     const scores: Record<string, number> = {};
+    const players: Record<string, { nick: string; country?: string }> = {};
+
     for (const entry of hs.highscores.items) {
-        const name = entry.game.player.nick;
+        const geoId = entry.game.player.id;
+        const nick = entry.game.player.nick;
+        const country = entry.game.player.countryCode?.toUpperCase();
+
         const amount = Number(entry.game.player.totalScore.amount);
-        scores[name] = Number.isFinite(amount) ? amount : 0;
+        scores[geoId] = Number.isFinite(amount) ? amount : 0;
+
+        players[geoId] = { nick, country };
     }
+
 
     const resultDate = new Date(hs.timestamp * 1000);
 
