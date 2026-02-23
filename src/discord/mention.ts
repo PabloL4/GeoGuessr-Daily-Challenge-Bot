@@ -5,24 +5,27 @@ import { fileURLToPath } from "node:url";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-const MAP_PATH = path.join(__dirname, "../../data/userMap.json");
+// league store lives in PROJECT/data/league.json
+const STORE_PATH = path.join(__dirname, "../../data/league.json");
 
 type PlayerInfo = {
     nick: string;
+    country?: string;
     discordId?: string;
-    country?: string; // ISO-2 like "ES"
 };
 
-type MapFile = {
-    players: Record<string, PlayerInfo>; // key = GeoGuessr userId
+type Store = {
+    weeks: Record<string, unknown>;
+    players: Record<string, PlayerInfo>;
 };
 
-function readMap(): MapFile {
+function readStore(): Store {
     try {
-        if (!fs.existsSync(MAP_PATH)) return { players: {} };
-        return JSON.parse(fs.readFileSync(MAP_PATH, "utf-8")) as MapFile;
+        if (!fs.existsSync(STORE_PATH)) return { weeks: {}, players: {} };
+        const parsed = JSON.parse(fs.readFileSync(STORE_PATH, "utf-8")) as Partial<Store>;
+        return { weeks: parsed.weeks ?? {}, players: parsed.players ?? {} };
     } catch {
-        return { players: {} };
+        return { weeks: {}, players: {} };
     }
 }
 
@@ -35,20 +38,15 @@ export function flagEmoji(country?: string): string {
     return String.fromCodePoint(...codePoints);
 }
 
-export function displayNameForGeoId(geoId: string, fallbackNick?: string): string {
-    const map = readMap();
-    const p = map.players[geoId];
-    if (!p) return fallbackNick ?? geoId;
+export function displayNameForGeoId(geoId: string): string {
+    const store = readStore();
+    const p = store.players[geoId];
 
-    const mention = p.discordId ? `<@${p.discordId}>` : (fallbackNick ?? p.nick);
+    // fallback if unknown
+    if (!p) return geoId;
+
+    const mentionOrNick = p.discordId ? `<@${p.discordId}>` : p.nick;
     const flag = flagEmoji(p.country);
 
-    return flag ? `${flag} ${mention}` : mention;
-}
-
-// Backward-compatible alias (old code expects this name)
-export function mentionForGeoguessrNick(nick: string): string {
-  // For now we don't have geoId here, so just return nick (no mention).
-  // We'll switch weeklySummary to use geoId in the next step.
-    return nick;
+    return flag ? `${flag} ${mentionOrNick}` : mentionOrNick;
 }

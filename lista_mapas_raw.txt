@@ -1,0 +1,17 @@
+A Community World;https://www.geoguessr.com/maps/62a44b22040f04bd36e8a914
+An Arbitrary World;https://www.geoguessr.com/maps/6089bfcff6a0770001f645dd;good nmpz
+A Souvlaki World;https://www.geoguessr.com/maps/66c65a243165335bb951ec5b;good for nmpz and nm
+A Varied World;https://www.geoguessr.com/maps/64ce812adc7614680516ff8c
+A Rural World;https://www.geoguessr.com/maps/5be0de51fe3a84037ca36447;good nmpz
+A Pro World,https://www.geoguessr.com/maps/6620b311f64a7b842b2ca83a
+Less-Extreme Regionguessing;https://www.geoguessr.com/maps/658a3ef12255cca9e7f39c06
+Terminus;https://www.geoguessr.com/maps/64919f3c95165ff26469091a
+Aesthetic World;https://www.geoguessr.com/maps/611e70006033f40001dc13d6
+A Skewed World;https://www.geoguessr.com/maps/6165f7176c26ac00016bca3d,only nmpz
+Panoramic Views;https://www.geoguessr.com/maps/6637b03d1e0559a6257ab71d
+A Learning World; https://www.geoguessr.com/maps/6078c830e945e900015f4a64
+A Divisional World; https://www.geoguessr.com/maps/61121b1e88f8fa0001407821
+Town Squares of the World; https://www.geoguessr.com/maps/5ffb6664ce04930001f8528b
+A tweaked World; https://www.geoguessr.com/maps/64205c50e014cf9bb1a04e01, good for move
+An Official world;https://www.geoguessr.com/maps/652ba0d9002aa0d36f996153 good for move
+AI Generated World; https://www.geoguessr.com/maps/5dbaf08ed0d2a478444d2e8e good nm and nmpz

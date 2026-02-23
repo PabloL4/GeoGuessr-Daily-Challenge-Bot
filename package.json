@@ -6,7 +6,8 @@
   "scripts": {
     "start": "node dist/server.js",
     "standalone": "node dist/server.js --standalone",
-    "build": "tsc"
+    "build": "tsc",
+    "linkbot": "node dist/linkBotMain.js"
   },
   "keywords": [],
   "author": "",

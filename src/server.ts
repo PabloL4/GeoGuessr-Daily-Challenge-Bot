@@ -8,6 +8,7 @@ import { postWeeklySummaryToDiscord } from "./discord/index.js";
 import { buildWeeklyTable } from "./league/weeklyStore.js";
 import { getPreviousWeekKeyIfMonday, markWeekAsPosted, clearWeek } from "./league/weeklyStore.js";
 import { recordDay } from "./league/weeklyStore.js";
+import { postYearlySummaryToDiscord } from "./yearlySummary.js";
 
 
 
@@ -15,13 +16,35 @@ dotenv.config();
 const app = express();
 const port = 25000;
 
+const toStoreMode = (mode: string): "move" | "nm" | "nmpz" => {
+    if (mode === "Move") return "move";
+    if (mode === "NM") return "nm";
+    return "nmpz";
+};
+
 const challenge = async () => {
-    const challengePayload = await defaultChallenge();
+    const challengePayload = await defaultChallenge(); // { map, mode }
     const ChallengeSettings = await createChallenge(challengePayload);
+
     if (ChallengeSettings) {
+        // ✅ NUEVO: guardar metadata del challenge en league.json (sin scores aún)
+        recordDay({
+            date: new Date(),
+            token: ChallengeSettings.token,
+            scores: {}, // todavía no hay highscores
+            challenge: {
+                mapId: ChallengeSettings.mapId ?? challengePayload.map, // fallback seguro
+                mapName: ChallengeSettings.name,
+                mapUrl:
+                    ChallengeSettings.mapUrl ?? `https://www.geoguessr.com/maps/${challengePayload.map}`,
+                mode: toStoreMode(ChallengeSettings.mode),
+            },
+        });
+
         await postChallengeToDiscord(ChallengeSettings);
     }
 };
+
 
 // const highscores = async () => {
 //     const highscores = await getHighscores();
@@ -56,6 +79,7 @@ const highscores = async () => {
         date: resultDate,
         token: hs.token,
         scores,
+        players,
     });
 };
 
@@ -109,6 +133,24 @@ app.get("/weekly", async (req, res) => {
             console.error("[/weekly] stack:", err.stack);
         }
         res.status(500).send("Failed to post weekly summary.");
+    }
+});
+
+app.get("/yearly", async (req, res) => {
+    try {
+        const yearStr = String(req.query.year ?? "");
+        const year = Number(yearStr);
+
+        if (!Number.isInteger(year) || year < 2000 || year > 2100) {
+            res.status(400).send("Missing/invalid year. Example: /yearly?year=2026");
+            return;
+        }
+
+        await postYearlySummaryToDiscord(year);
+        res.send(`OK yearly summary posted for ${year}`);
+    } catch (err: any) {
+        console.error(err);
+        res.status(500).send(err?.message ?? "Error");
     }
 });
 

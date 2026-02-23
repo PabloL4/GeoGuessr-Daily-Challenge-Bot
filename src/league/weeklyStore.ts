@@ -3,6 +3,8 @@
 
 import fs from "node:fs";
 import path from "node:path";
+import { normalizeCountryCode } from "../players.js";
+
 
 type PlayerKey = string; // nick or stable id
 
@@ -12,6 +14,13 @@ export type LeagueDay = {
     date: string;      // YYYY-MM-DD
     dayIndex: number;  // e.g. 736
     token: string;
+
+    // NEW (optional): map + mode used that day
+    mapId?: string;
+    mapName?: string;
+    mapUrl?: string;
+    mode?: "move" | "nm" | "nmpz";
+
     scores: DailyScores;
 };
 
@@ -23,8 +32,10 @@ export type LeagueWeek = {
 };
 
 type Store = {
-    weeks: Record<string, LeagueWeek>; // key: weekStart (YYYY-MM-DD)
+    weeks: Record<string, LeagueWeek>;
+    players: Record<string, { nick: string; country?: string; discordId?: string }>; // key = GeoGuessr id
 };
+
 
 const DATA_DIR = path.join(process.cwd(), "data");
 const STORE_PATH = path.join(DATA_DIR, "league.json");
@@ -36,8 +47,9 @@ function ensureDataDir(): void {
 function readStore(): Store {
     console.log("[league] readStore STORE_PATH =", STORE_PATH);
     ensureDataDir();
-    if (!fs.existsSync(STORE_PATH)) return { weeks: {} };
-    return JSON.parse(fs.readFileSync(STORE_PATH, "utf-8")) as Store;
+    if (!fs.existsSync(STORE_PATH)) return { weeks: {}, players: {} };
+    const parsed = JSON.parse(fs.readFileSync(STORE_PATH, "utf-8")) as Partial<Store>;
+    return { weeks: parsed.weeks ?? {}, players: parsed.players ?? {} };
 }
 
 function writeStore(store: Store): void {
@@ -90,10 +102,61 @@ export function getDayIndexFor(date: Date): number {
     return baseDay + daysBetween(start, date);
 }
 
+function flagEmoji(country?: string): string {
+    if (!country) return "";
+    const cc = country.toUpperCase();
+    if (!/^[A-Z]{2}$/.test(cc)) return "";
+    const A = 0x1f1e6;
+    return String.fromCodePoint(...[...cc].map(c => A + (c.charCodeAt(0) - 65)));
+}
+
+function countryCodeToFlagEmoji(code?: string): string {
+    if (!code) return "";
+
+    const c = code.trim().toUpperCase();
+    if (!/^[A-Z]{2}$/.test(c)) return "";
+
+    const base = 0x1f1e6;
+    const A = "A".charCodeAt(0);
+
+    return String.fromCodePoint(
+        base + (c.charCodeAt(0) - A),
+        base + (c.charCodeAt(1) - A)
+    );
+}
+
+
+
 // --- Public API ---
 
-export function recordDay(params: { date: Date; token: string; scores: DailyScores }): void {
+export function recordDay(params: {
+    date: Date;
+    token: string;
+    scores: DailyScores; // now keyed by geoId
+    players?: Record<string, { nick: string; country?: string }>;
+
+    // NEW (optional): map + mode for that day
+    challenge?: {
+        mapId: string;
+        mapName: string;
+        mapUrl: string;
+        mode: "move" | "nm" | "nmpz";
+    };
+}): void {
     const store = readStore();
+
+    if (params.players) {
+        for (const [geoId, info] of Object.entries(params.players)) {
+            const existing = store.players[geoId];
+
+            store.players[geoId] = {
+                nick: info.nick,
+                country: normalizeCountryCode(info.country ?? existing?.country),
+                discordId: existing?.discordId,
+            };
+        }
+    }
+
 
     const weekStartDate = mondayOf(params.date);
     const weekStartKey = toYmd(weekStartDate);
@@ -109,13 +172,23 @@ export function recordDay(params: { date: Date; token: string; scores: DailyScor
         days: {},
     };
 
-    week.weekIndex = weekIndex; // keep updated
+    const existingDay = week.days[dateKey];
+
     week.days[dateKey] = {
         date: dateKey,
         dayIndex,
         token: params.token,
+
+        // ✅ conservar lo existente si no viene challenge nuevo
+        mapId: params.challenge?.mapId ?? existingDay?.mapId,
+        mapName: params.challenge?.mapName ?? existingDay?.mapName,
+        mapUrl: params.challenge?.mapUrl ?? existingDay?.mapUrl,
+        mode: params.challenge?.mode ?? existingDay?.mode,
+
         scores: params.scores,
     };
+
+
 
     store.weeks[weekStartKey] = week;
     console.log("[league] writing to:", STORE_PATH);
@@ -142,6 +215,7 @@ export function getPreviousWeekKeyIfMonday(today: Date): string | null {
 export function buildWeeklyTable(weekStartKey: string): { title: string; table: string } {
     const store = readStore();
     const week = store.weeks[weekStartKey];
+
     console.log("[league] buildWeeklyTable weekStartKey =", weekStartKey, "available weeks =", Object.keys(store.weeks));
     if (!week) throw new Error(`Week not found: ${weekStartKey}`);
 
@@ -191,46 +265,81 @@ export function buildWeeklyTable(weekStartKey: string): { title: string; table: 
 
     const fmt = (n: number) => n.toLocaleString("es-ES");
 
-    // Column widths for monospace table
-    const nameWidth = Math.min(
-        18,
-        Math.max(6, ...sliced.map((r) => r.name.length))
-    );
-    const colWidth = 6;
+    // Preconstruimos filas imprimibles
+    const printed = sliced.map((r, idx) => {
+        const player = store.players[r.name]; // geoId
+        const nick = player?.nick ?? r.name;
+        const country = (player?.country ?? "").toUpperCase(); // ISO2 ya normalizado
 
-    const pad = (s: string, w: number) =>
-        s.length >= w ? s.slice(0, w) : s + " ".repeat(w - s.length);
-    const padL = (s: string, w: number) =>
-        s.length >= w ? s.slice(0, w) : " ".repeat(w - s.length) + s;
-
-    const lines: string[] = [];
-
-    // Header
-    lines.push(
-        pad("NOMBRE", nameWidth) +
-        " " +
-        dCols.map((x) => padL(`D${x}`, colWidth)).join(" ") +
-        " " +
-        padL("TOTAL", colWidth)
-    );
-
-    // Rows
-    for (const r of sliced) {
         const cells = r.perDay.map((v) => (v == null ? "-" : fmt(v)));
+        const totalStr = fmt(r.total);
+
+        return { rank: idx + 1, nick, country, cells, totalStr };
+    });
+
+    // Headers
+    const headers = ["#", "NOMBRE", "PAÍS", "D1", "D2", "D3", "D4", "D5", "D6", "D7", "TOTAL"];
+
+    // Anchos dinámicos + mínimos
+    const rankWidth = Math.max(2, String(printed.length).length);
+    const nameWidth = Math.max(12, ...printed.map((r) => r.nick.length));
+    const countryWidth = 4;
+
+    const dayWidths = Array.from({ length: 7 }, (_, i) =>
+        Math.max(6, headers[i + 3].length, ...printed.map((r) => r.cells[i].length))
+    );
+    const totalWidth = Math.max(6, headers[10].length, ...printed.map((r) => r.totalStr.length));
+
+    const padR = (s: string, w: number) => (s.length >= w ? s : s + " ".repeat(w - s.length));
+    const padL = (s: string, w: number) => (s.length >= w ? s : " ".repeat(w - s.length) + s);
+
+    const sep = " | ";
+
+    const headerLine =
+        padL(headers[0], rankWidth) +
+        "  " +
+        padR(headers[1], nameWidth) +
+        "  " +
+        padR(headers[2], countryWidth) +
+        sep +
+        dayWidths.map((w, i) => padL(headers[i + 3], w)).join(sep) +
+        sep +
+        padL(headers[10], totalWidth);
+
+    const dividerLine =
+        "-".repeat(rankWidth) +
+        "  " +
+        "-".repeat(nameWidth) +
+        "  " +
+        "-".repeat(countryWidth) +
+        sep +
+        dayWidths.map((w) => "-".repeat(w)).join(sep) +
+        sep +
+        "-".repeat(totalWidth);
+
+    const lines: string[] = [headerLine, dividerLine];
+
+    for (const r of printed) {
         lines.push(
-            pad(r.name, nameWidth) +
-            " " +
-            cells.map((c) => padL(c, colWidth)).join(" ") +
-            " " +
-            padL(fmt(r.total), colWidth)
+            padL(String(r.rank), rankWidth) +
+            "  " +
+            padR(r.nick, nameWidth) +
+            "  " +
+            padR(r.country, countryWidth) +
+            sep +
+            r.cells.map((c, i) => padL(c, dayWidths[i])).join(sep) +
+            sep +
+            padL(r.totalStr, totalWidth)
         );
     }
 
     const title = `Semana ${week.weekIndex} (${week.weekStart})`;
     return { title, table: lines.join("\n") };
+
+
 }
 
-export function getWeeklyPodium(weekStartKey: string): Array<{ name: string; total: number }> {
+export function getWeeklyPodium(weekStartKey: string): Array<{ geoId: string; total: number }> {
     const store = readStore();
     const week = store.weeks[weekStartKey];
     if (!week) return [];
@@ -246,26 +355,28 @@ export function getWeeklyPodium(weekStartKey: string): Array<{ name: string; tot
         dates.push(toYmd(d));
     }
 
-    // Collect players
-    const players = new Set<string>();
+    // Collect players (these are GeoGuessr IDs now)
+    const playerIds = new Set<string>();
     for (const d of dates) {
         const day = week.days[d];
         if (!day) continue;
-        Object.keys(day.scores).forEach((p) => players.add(p));
+        Object.keys(day.scores).forEach((geoId) => playerIds.add(geoId));
     }
 
-    const rows = Array.from(players).map((name) => {
+    const rows = Array.from(playerIds).map((geoId) => {
         const total = dates.reduce((acc, d) => {
             const day = week.days[d];
-            const v = day?.scores[name];
+            const v = day?.scores[geoId];
             return acc + (Number.isFinite(v) ? v! : 0);
         }, 0);
-        return { name, total };
+
+        return { geoId, total };
     });
 
     rows.sort((a, b) => b.total - a.total);
     return rows.slice(0, 3);
 }
+
 
 export function getWeeklyPerfectAttendance(weekStartKey: string): string[] {
     const store = readStore();
@@ -304,8 +415,6 @@ export function getWeeklyPerfectAttendance(weekStartKey: string): string[] {
     return perfect;
 }
 
-
-
 export function clearWeek(weekStartKey: string): void {
     const store = readStore();
     delete store.weeks[weekStartKey];
@@ -321,4 +430,5 @@ export function markWeekAsPosted(weekStartKey: string, when = new Date()): void 
     store.weeks[weekStartKey] = week;
     writeStore(store);
 }
+
 

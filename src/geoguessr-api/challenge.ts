@@ -28,11 +28,34 @@ export const createChallenge = async (settings: ChallengeSettings): Promise<Chal
             token: data.token
         });
         const mapName = await fetchMapName(settings.map) || 'Unknown';
+        // NEW: resolve mapId/mapUrl from data/maps.json
+        let mapId: string | undefined;
+        let mapUrl: string | undefined;
+
+        try {
+            const mapsPath = path.resolve('data', 'maps.json');
+            const rawMaps = await fs.readFile(mapsPath, 'utf8');
+            const parsed = JSON.parse(rawMaps) as { maps?: Array<{ id: string; name: string; url: string }> };
+
+            const geoMapId = settings.map; // geoguessr map id (last part of URL)
+            const found = parsed.maps?.find(m =>
+                m.url.endsWith(geoMapId) || m.url.includes(`/maps/${geoMapId}`)
+            );
+
+            mapId = found?.id;
+            mapUrl = found?.url ?? `https://www.geoguessr.com/maps/${geoMapId}`;
+        } catch {
+            // si falla, no bloqueamos la creación del challenge
+            mapUrl = `https://www.geoguessr.com/maps/${settings.map}`;
+        }
+
         await fs.writeFile(tokenFilePath, jsonData, 'utf8');
         return {
             name: mapName,
             mode: settings.mode,
-            token: data.token
+            token: data.token,
+            mapId,
+            mapUrl
         }
     } catch (error) {
         console.error('Error creating challenge:', error);

@@ -22,7 +22,12 @@ export interface ChallengeSettingsForPost {
     name: string;
     mode: GameMode;
     token: string;
+
+    // NEW: info extra del mapa (para guardar en league.json)
+    mapId?: string;   // el "id" de tu maps.json (ej: "community_world")
+    mapUrl?: string;  // la URL completa del mapa
 };
+
 
 export interface ChallengeResponse {
     token: string;
