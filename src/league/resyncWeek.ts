@@ -52,7 +52,7 @@ export async function resyncWeek(weekStartKey: string): Promise<{ ok: true; days
         updatedDays++;
 
         // fecha del día a rellenar (importante)
-        recordDay({
+        await recordDay({
             date: new Date(`${date}T12:00:00Z`),
             token,
             scores,

@@ -428,6 +428,28 @@
                 "cities",
                 "urban"
             ]
+        },
+		{
+            "id": "geosevi_world",
+            "name": "Geosevi World",
+            "url": "https://www.geoguessr.com/maps/696c23b2897ca69ad8b4782b",
+            "modes": {
+                "allowed": [
+                    "nm",
+                    "nmpz"
+                ],
+                "recommended": [
+                    "nm",
+                    "nmpz"
+                ]
+            },
+            "weight": 2,
+            "cooldownDays": 9,
+            "tags": [
+                "world",
+                "nmpz-only",
+                "hard"
+            ]
         }
     ]
 }

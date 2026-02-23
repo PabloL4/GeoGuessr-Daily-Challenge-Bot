@@ -143,8 +143,6 @@ export function recordDay(params: {
     token: string;
     scores: DailyScores; // now keyed by geoId
     players?: Record<string, { nick: string; country?: string }>;
-
-    // NEW (optional): map + mode for that day
     challenge?: {
         mapId: string;
         mapName: string;
@@ -168,12 +166,10 @@ export function recordDay(params: {
         }
     }
 
-
     const weekStartDate = mondayOf(params.date);
     const weekStartKey = toYmd(weekStartDate);
 
     const weekIndex = getWeekIndexFor(params.date);
-    const dayIndex = getDayIndexFor(params.date);
 
     const dateKey = toYmd(params.date);
 
@@ -185,10 +181,17 @@ export function recordDay(params: {
 
     const existingDay = week.days[dateKey];
 
+    // ✅ dayIndex estable y NO se pisa si ya existe
+    const computedDayIndex = getDayIndexFor(new Date(`${dateKey}T12:00:00Z`));
+    const finalDayIndex = existingDay?.dayIndex ?? computedDayIndex;
+
+    // ✅ no pisar token si ya había uno guardado (salvo que no exista)
+    const finalToken = existingDay?.token ?? params.token;
+
     week.days[dateKey] = {
         date: dateKey,
-        dayIndex,
-        token: params.token,
+        dayIndex: finalDayIndex,
+        token: finalToken,
 
         // ✅ conservar lo existente si no viene challenge nuevo
         mapId: params.challenge?.mapId ?? existingDay?.mapId,
@@ -198,15 +201,14 @@ export function recordDay(params: {
         roundCount: params.challenge?.roundCount ?? existingDay?.roundCount,
         timeLimit: params.challenge?.timeLimit ?? existingDay?.timeLimit,
 
+        // ✅ merge scores para que el resync añada sin borrar
         scores: { ...(existingDay?.scores ?? {}), ...(params.scores ?? {}) },
     };
 
-
-
     store.weeks[weekStartKey] = week;
-    // console.log("[league] writing to:", STORE_PATH);
     writeStore(store);
 }
+
 
 export function getPreviousWeekKeyIfMonday(today: Date): string | null {
     // Only returns a week key when today is Monday.
