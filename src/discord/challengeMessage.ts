@@ -13,12 +13,12 @@ export function buildChallengeIntro(meta: ChallengeMeta): string {
 
   const lines: string[] = [];
 
-  // RONDAS
+  // ROUNDS
   if (roundCount === 10) {
     lines.push(t("challenge.intro.rounds.special10"));
   }
 
-  // TIEMPO
+  // TIME
   if (timeLimit === 10) {
     lines.push(t("challenge.intro.time.10"));
   } else if (timeLimit <= 20) {
@@ -31,7 +31,7 @@ export function buildChallengeIntro(meta: ChallengeMeta): string {
     lines.push(t("challenge.intro.time.relax"));
   }
 
-  // MODO
+  // MODE
   if (mode === "NMPZ") {
     lines.push(t("challenge.intro.mode.nmpz"));
   } else if (mode === "NM") {

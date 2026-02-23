@@ -57,17 +57,17 @@ const challenge = async () => {
     if (ChallengeSettings) {
         const now = new Date();
         const dayIndex = getDayIndexFor(now);
-        // ✅ NUEVO: guardar metadata del challenge en league.json (sin scores aún)
+        // save challenge metadata in league.json (no scores yet)
         recordDay({
             date: now,
             token: ChallengeSettings.token,
-            scores: {}, // todavía no hay highscores
+            scores: {}, //no highscores yet
             challenge: {
                 mapId: ChallengeSettings.mapId ?? challengePayload.map,
                 mapName: ChallengeSettings.name,
                 mapUrl: ChallengeSettings.mapUrl ?? `https://www.geoguessr.com/maps/${challengePayload.map}`,
                 mode: toStoreMode(ChallengeSettings.mode),
-                //dayIndex: ChallengeSettings.dayIndex ?? 0, // lo importante es que no sea undefined, el día real se asigna al guardar el día completo con recordDay()
+                //dayIndex: ChallengeSettings.dayIndex ?? 0, //the important thing is that it is not undefined, the actual day is assigned when saving the entire day with recordDay()
                 roundCount: ChallengeSettings.roundCount ?? challengePayload.roundCount,
                 timeLimit: ChallengeSettings.timeLimit ?? challengePayload.timeLimit,
             },
@@ -198,7 +198,7 @@ app.get("/yearly", async (req, res) => {
 });
 
 
-//rellenar puntos de un challenge pasado != ayer
+//fill in points from a past challenge != yesterday
 app.get("/backfill", async (req, res) => {
     try {
         const date = String(req.query.date ?? "").trim(); // YYYY-MM-DD
@@ -215,7 +215,7 @@ app.get("/backfill", async (req, res) => {
 
         const store = JSON.parse(fs.readFileSync(storePath, "utf8")) as any;
 
-        // ✅ Buscar el día en todas las semanas (sin depender de weekStart)
+        // Search for the day in all weeks (without depending on weekStart)
         let foundWeekKey: string | null = null;
         let dayObj: any = null;
 
@@ -254,7 +254,7 @@ app.get("/backfill", async (req, res) => {
             players[geoId] = { nick, country };
         }
 
-        // usar la fecha del día que rellenamos
+        //use the date of the day we filled
         const resultDate = new Date(`${date}T12:00:00Z`);
 
         recordDay({
@@ -262,7 +262,6 @@ app.get("/backfill", async (req, res) => {
             token,
             scores,
             players,
-            // no tocamos challenge: mantiene mapId/mapName/mode/rounds/timeLimit ya guardados
         });
 
         res.send(
@@ -306,7 +305,7 @@ app.post("/say", async (req, res) => {
                 : String(req.body?.message ?? "").trim();
         if (!message) return res.status(400).send("Missing message");
 
-        // evita mensajes gigantes
+        //avoid giant messages
         if (message.length > 1800) {
             return res.status(400).send("Message too long (max ~1800 chars)");
         }
@@ -326,8 +325,8 @@ app.get("/challenge/test", async (req, res) => {
             return res.status(400).send('Missing asDate. Example: ?asDate=2026-02-02');
         }
 
-        // Construimos Date en UTC “segura”
-        const asDate = new Date(`${asDateStr}T12:00:00Z`); // mediodía evita líos de TZ
+        // We build Date in “safe” UTC
+        const asDate = new Date(`${asDateStr}T12:00:00Z`); //noon avoids TZ trouble
         if (Number.isNaN(asDate.getTime())) {
             return res.status(400).send("Invalid asDate. Use YYYY-MM-DD");
         }
@@ -337,7 +336,7 @@ app.get("/challenge/test", async (req, res) => {
 
         if (!created) return res.status(500).send("Failed to create challenge");
 
-        // postea en Discord (si quieres, o añade un flag dryRun)
+        // post to Discord
         await postChallengeToDiscord(created);
 
         return res.json({
@@ -352,9 +351,6 @@ app.get("/challenge/test", async (req, res) => {
     }
 });
 
-
-
-
 const mode = process.argv[2];
 
 app.listen(port, () => {
@@ -366,17 +362,17 @@ if (mode === '--standalone') {
         console.log(t("server.standalone"));
         didLogStandalone = true;
     }
-    // Diario: recoger highscores (17:55)
+    //daily collect highscores (17:55)
     cron.schedule('55 17 * * *', async () => {
         await highscores();
     });
 
-    // Diario: crear challenge (18:00)
+    // daily create challenge (18:00)
     cron.schedule('0 18 * * *', async () => {
         await challenge();
     });
 
-    // Semanal: resumen (domingo 18:05)
+    // Weekly: summary (Monday 18:05)
     cron.schedule(
         "57 17 * * 1",
         async () => {
@@ -388,10 +384,10 @@ if (mode === '--standalone') {
     //TEST
     // cron.schedule('* * * * *', async () => {
     //     console.log("Weekly summary cron running...");
-    //     await maybePostWeeklySummary("2026-01-19"); // pon aquí el weekStart real que exista
+    //     await maybePostWeeklySummary("2026-01-19"); 
 
 
-    // 📅 Resumen mensual — día 1 a las 18:15 (mes anterior)
+    // Monthly summary — day 1 at 18:15 (previous month)
     cron.schedule('59 17 1 * *', async () => {
         const now = new Date();
         const year = now.getMonth() === 0 ? now.getFullYear() - 1 : now.getFullYear();
@@ -401,7 +397,7 @@ if (mode === '--standalone') {
         await postMonthlySummaryToDiscord(year, month);
     });
 
-    // Anual: resumen (1 de enero a las 12:00)
+    //Annual: summary (January 1 at 12:00)
     cron.schedule('0 12 1 1 *', async () => {
         await postYearlySummary(new Date().getFullYear() - 1);
     });

@@ -20,7 +20,7 @@ export async function postMonthlySummaryToDiscord(year: number, month1to12: numb
     const { start, end } = monthRange(year, month1to12);
     const days = getDaysInRange(start, end);
 
-    const roleId = process.env.DISCORD_ROLE_DAILY_ID; // solo números
+    const roleId = process.env.DISCORD_ROLE_DAILY_ID; //only numbers
     const ping = roleId ? `<@&${roleId}>` : t("discord.ping.dailyChallenge");
 
     const topMaps = getTopMaps(days, 5);

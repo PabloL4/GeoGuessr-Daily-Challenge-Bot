@@ -24,7 +24,7 @@ export const createChallenge = async (settings: ChallengeSettings): Promise<Chal
         }
         const data = await response.json() as ChallengeResponse;
         console.log("[challenge] response json =", {
-            // deja esto amplio la primera vez
+           //leave this wide the first time
             json: data,
         });
         console.log('Challenge created:', data.token);
@@ -51,7 +51,7 @@ export const createChallenge = async (settings: ChallengeSettings): Promise<Chal
             mapId = found?.id;
             mapUrl = found?.url ?? `https://www.geoguessr.com/maps/${geoMapId}`;
         } catch {
-            // si falla, no bloqueamos la creación del challenge
+            // If it fails, we do not block the creation of the challenge
             mapUrl = `https://www.geoguessr.com/maps/${settings.map}`;
         }
 

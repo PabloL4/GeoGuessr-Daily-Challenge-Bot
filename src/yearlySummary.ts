@@ -6,7 +6,7 @@ import { t, getLocale } from "./i18n/index.js";
 export async function postYearlySummary(year: number): Promise<void> {
     const ranking = getYearlyRanking(year);
 
-    const roleId = process.env.DISCORD_ROLE_DAILY_ID; // solo números
+    const roleId = process.env.DISCORD_ROLE_DAILY_ID; //only numbers
     const ping = roleId ? `<@&${roleId}>` : t("discord.ping.dailyChallenge");
 
     if (!ranking.length) {

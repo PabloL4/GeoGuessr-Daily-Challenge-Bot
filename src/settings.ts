@@ -2,29 +2,29 @@ import { readFile } from "node:fs/promises";
 import fsSync from "node:fs";
 import path from "path";
 import { ChallengePayload, ChallengeSettings, GameMode } from "./types.js";
-import { mondayOf, toYmd } from "./league/weeklyStore.js"; // ajusta ruta si hace falta
+import { mondayOf, toYmd } from "./league/weeklyStore.js"; 
 
 const STORE_PATH = path.join(process.cwd(), "data", "league.json");
 
 export function getWeekdayUTC(d: Date = new Date()): number {
-  return d.getUTCDay(); // 0=domingo ... 1=lunes ...
+  return d.getUTCDay(); // 0=Sunday... 1=Monday...
 }
 
 function randomFrom<T>(arr: T[]): T {
     return arr[Math.floor(Math.random() * arr.length)];
 }
 
-const TEN_ROUNDS_DAY = 3; // 3 = miércoles
-const FAST_ROUND_DAY = 1; // 1 = lunes (por ejemplo)
+const TEN_ROUNDS_DAY = 3; //3 = Wednesday
+const FAST_ROUND_DAY = 1; //1 = Monday
 
 export function createChallengePayload(settings: ChallengeSettings): ChallengePayload {
     const { map, mode } = settings;
 
-    // ✅ Usa lo que ya decidió defaultChallenge()
+    // Use what defaultChallenge() already decided
     const roundCount = settings.roundCount ?? 5;
     const timeLimit = settings.timeLimit ?? 60;
 
-    // (Opcional) Asegurar múltiplos de 10 si GeoGuessr lo requiere
+    //Ensure multiples of 10
     const snappedTimeLimit = Math.round(timeLimit / 10) * 10;
 
     return {
@@ -92,28 +92,28 @@ function pickMode(
     const recommended = map.modes.recommended ?? [];
     const forbidMove = !!opts?.forbidMove;
 
-    // 70% recomendado si existe
+    // 70% recommended if it exists
     let pool: AllowedModeLower[] =
         recommended.length > 0 && Math.random() < 0.7 ? recommended : allowed;
 
-    // ✅ NEW: si hoy Move está prohibido (p.ej. día 10 rondas), lo quitamos del pool si se puede
+    // if Move is prohibited today (e.g. day 10 rounds), we remove it from the pool if possible
     if (forbidMove && pool.includes("move")) {
         const withoutMove = pool.filter((m) => m !== "move");
         if (withoutMove.length > 0) pool = withoutMove;
     }
 
-    // 🚫 evitar repetir modo de ayer si se puede
+    // avoid repeating yesterday's mode if you can
     if (lastMode && pool.length > 1 && pool.includes(lastMode)) {
         const filtered = pool.filter((m) => m !== lastMode);
         if (filtered.length > 0) pool = filtered;
     }
 
-    // ✅ regla: MOVE máx 1 en últimos 7 días (ventana deslizante)
+    // MOVE max 1 in last 7 days
     const moveBlocked = hasTooManyMove(recent, 1);
     if (moveBlocked && pool.includes("move")) {
         const withoutMove = pool.filter((m) => m !== "move");
         if (withoutMove.length > 0) pool = withoutMove;
-        // si queda vacío (mapa solo permite move), lo dejamos como está
+        // If it is empty (map only allows movement), we leave it as is
     }
 
     return pool[Math.floor(Math.random() * pool.length)];
@@ -188,8 +188,6 @@ function countMovesThisWeek(today = new Date()): number {
     }).length;
 }
 
-
-// export async function defaultChallenge(): Promise<ChallengeSettings> {
 export async function defaultChallenge(opts?: { asDate?: Date }): Promise<ChallengeSettings> {
 
     const now = opts?.asDate ?? new Date();
@@ -210,13 +208,13 @@ export async function defaultChallenge(opts?: { asDate?: Date }): Promise<Challe
 
     const map = urlToMapId(chosen.url);
 
-    // ✅ NEW: rounds rule (y nos sirve para prohibir Move en TEN_ROUNDS_DAY)
+    // rounds rule (and it helps us prohibit Move in TEN_ROUNDS_DAY)
     const weekday = getWeekdayUTC(now);
     const roundCount = weekday === TEN_ROUNDS_DAY ? 10 : 5;
 
     let modeLower = pickMode(chosen, lastMode, recent);
 
-    // ✅ Regla: máximo 1 MOVE por semana
+   //Rule: maximum 1 MOVE per week
     const movesSoFar = countMovesThisWeek(new Date());
     if (movesSoFar >= 1 && modeLower === "move") {
         const allowed = chosen.modes?.allowed ?? ["move", "nm", "nmpz"];
@@ -224,7 +222,7 @@ export async function defaultChallenge(opts?: { asDate?: Date }): Promise<Challe
         modeLower = (nonMove.includes("nmpz") ? "nmpz" : nonMove[0] ?? "nm") as any;
     }
 
-    // ✅ NEW: Regla extra — si hoy es TEN_ROUNDS_DAY, NO puede ser Move
+    // rule — if today is TEN_ROUNDS_DAY, it CANNOT be Move
     if (weekday === TEN_ROUNDS_DAY && modeLower === "move") {
         const allowed = chosen.modes?.allowed ?? ["move", "nm", "nmpz"];
         const nonMove = allowed.filter((m: string) => m !== "move");

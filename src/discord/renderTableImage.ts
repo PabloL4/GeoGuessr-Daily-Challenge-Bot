@@ -12,14 +12,14 @@ type RenderTableOptions = {
 const FLAG_CACHE_DIR = path.join(process.cwd(), "data", "flags");
 
 const COLOR_TEXT = "#e5e7eb";
-const COLOR_TOTAL = "#facc15"; // amarillo suave
-const COLOR_TOTAL_BG = "rgba(250, 204, 21, 0.15)"; // fondo suave para TOTAL
+const COLOR_TOTAL = "#facc15"; // soft yellow
+const COLOR_TOTAL_BG = "rgba(250, 204, 21, 0.15)"; // soft bottom for TOTAL
 
 function ensureFlagCacheDir() {
     if (!fs.existsSync(FLAG_CACHE_DIR)) fs.mkdirSync(FLAG_CACHE_DIR, { recursive: true });
 }
 
-// Convierte "DE" -> "1f1e9-1f1ea" (formato Twemoji)
+// Convert "DE" -> "1f1e9-1f1ea" (Twemoji format)
 function countryCodeToTwemojiKey(cc: string): string | null {
     const c = cc.trim().toUpperCase();
     if (!/^[A-Z]{2}$/.test(c)) return null;
@@ -55,10 +55,10 @@ async function getFlagPngPath(cc: string): Promise<string | null> {
 }
 
 /**
- * Separa el último "token" de la línea (TOTAL).
- * Devuelve:
- *  - left: todo hasta el espacio justo antes del TOTAL (incluye ese espacio)
- *  - total: último token no-espacio
+*Separates the last "token" of the line (TOTAL).
+ *Returns:
+ *-left: everything up to the space just before the TOTAL (includes that space)
+ *-total: last non-space token
  */
 function splitTotalSegment(line: string): { left: string; total: string } | null {
     const m = line.match(/^(.*\s)(\S+)\s*$/);
@@ -78,7 +78,7 @@ export async function renderTableImage({
 
     const monoFont = `"Cascadia Mono", "Consolas", monospace`;
 
-    // 1) Canvas provisional para medir texto
+    // 1) Provisional canvas to measure text
     const tmp = createCanvas(10, 10);
     const tctx = tmp.getContext("2d");
     tctx.font = `${fontSize}px ${monoFont}`;
@@ -90,17 +90,17 @@ export async function renderTableImage({
         (title ? titleSize + 20 : 0) +
         lines.length * lineHeight;
 
-    // 2) Canvas final
+    // 2) Final Canvas
     const canvas = createCanvas(width, height);
     const ctx = canvas.getContext("2d");
 
-    // Fondo
+    // Bottom
     ctx.fillStyle = "#0f172a";
     ctx.fillRect(0, 0, width, height);
 
     let y = padding;
 
-    // Título
+    // Title
     if (title) {
         ctx.font = `bold ${titleSize}px Sans`;
         ctx.fillStyle = COLOR_TEXT;
@@ -111,13 +111,13 @@ export async function renderTableImage({
     const normalMono = `${fontSize}px ${monoFont}`;
     const boldMono = `bold ${fontSize}px ${monoFont}`;
 
-    const flagSize = 28; // tamaño icono bandera
+    const flagSize = 28; // flag icon size
 
     for (const line of lines) {
-        // Detecta filas de jugadores (rank al inicio: " 1." / "12." etc)
+        // Detects rows of players (rank at the beginning: "1." /"12." etc.)
         const isPlayerRow = /\[[A-Z]{2}\]/.test(line);
 
-        // Líneas que no son jugadores (header, separadores, etc)
+        // Lines that are not players (header, separators, etc.)
         if (!isPlayerRow) {
             ctx.font = normalMono;
             ctx.fillStyle = COLOR_TEXT;
@@ -126,34 +126,34 @@ export async function renderTableImage({
             continue;
         }
 
-        // Para resaltar TOTAL, preparamos split (sobre la línea completa)
+        // To highlight TOTAL, we prepare split (over the full line)
         const totalSeg = splitTotalSegment(line);
 
-        // Buscamos el marcador [CC]
+        // We look for the marker[CC]
         const m = line.match(/\[([A-Z]{2})\]/);
 
-        // Caso con bandera
+        // Case with flag
         if (m) {
             const cc = m[1];
 
-            // Partimos la línea en: before + "[CC]" + after
+            // We split the line into: before + "[CC]" + after
             const before = line.slice(0, m.index);
             const after = line.slice((m.index ?? 0) + m[0].length);
 
             ctx.font = normalMono;
             ctx.fillStyle = COLOR_TEXT;
 
-            // Dibuja before
+            // Draw before
             ctx.fillText(before, padding, y + fontSize);
 
-            // Medimos before (con la misma fuente monospace)
+            // We measure before (with the same monospace source)
             const beforeW = ctx.measureText(before).width;
 
-            // Espacio reservado del marcador original en monospace: "[CC] "
+            // Reserved space of the original marker in monospace: "[CC] "
             const marker = `[${cc}] `;
             const markerW = ctx.measureText(marker).width;
 
-            // Dibuja bandera (o fallback con el marcador literal)
+            // Draw flag (or fallback with literal marker)
             const flagPath = await getFlagPngPath(cc);
             if (flagPath) {
                 const img = await loadImage(flagPath);
@@ -163,7 +163,7 @@ export async function renderTableImage({
                 ctx.fillText(marker, padding + beforeW, y + fontSize);
             }
 
-            // Dibuja after (texto normal)
+            // Draw after (normal text)
             const afterText = after.trimStart();
             const afterX = padding + beforeW + markerW;
 
@@ -171,7 +171,7 @@ export async function renderTableImage({
             ctx.fillStyle = COLOR_TEXT;
             ctx.fillText(afterText, afterX, y + fontSize);
 
-            // Resalta TOTAL (fondo + bold + color)
+            // Highlight TOTAL (background + bold + color)
             if (totalSeg) {
                 const leftW = ctx.measureText(totalSeg.left).width;
                 const totalW = ctx.measureText(totalSeg.total).width;
@@ -187,12 +187,12 @@ export async function renderTableImage({
                 ctx.fillStyle = COLOR_TOTAL;
                 ctx.fillText(totalSeg.total, totalX, y + fontSize);
 
-                // vuelve a normal
+                // back to normal
                 ctx.font = normalMono;
                 ctx.fillStyle = COLOR_TEXT;
             }
         } else {
-            // Fila jugador sin marcador [CC]
+            // Player row without marker [CC]
             ctx.font = normalMono;
             ctx.fillStyle = COLOR_TEXT;
             ctx.fillText(line, padding, y + fontSize);
@@ -221,7 +221,7 @@ export async function renderTableImage({
     }
 
     const outPath = path.resolve(outputFile);
-    fs.mkdirSync(path.dirname(outPath), { recursive: true }); // ✅ crea data/tmp si no existe
+    fs.mkdirSync(path.dirname(outPath), { recursive: true }); // create data/tmp if it does not exist
 
     const buffer = canvas.toBuffer("image/png");
     fs.writeFileSync(outPath, buffer);

@@ -12,7 +12,7 @@ import { t, getLocale } from "../i18n/index.js";
  */
 export async function postWeeklySummaryToDiscord(weekStartKey: string): Promise<void> {
 
-    const roleId = process.env.DISCORD_ROLE_DAILY_ID; // solo números
+    const roleId = process.env.DISCORD_ROLE_DAILY_ID;
     const ping = roleId ? `<@&${roleId}>` : t("discord.ping.dailyChallenge");
 
     const podium = getWeeklyPodium(weekStartKey);
@@ -30,7 +30,7 @@ export async function postWeeklySummaryToDiscord(weekStartKey: string): Promise<
 
     const extraAwardsLines: string[] = [];
 
-    // ✅ Top 5 rounds por modo
+    // Top 5 rounds per mode
 
     if (best5Nmpz) {
         extraAwardsLines.push(
@@ -88,25 +88,25 @@ export async function postWeeklySummaryToDiscord(weekStartKey: string): Promise<
 
     const medals = ["🥇", "🥈", "🥉"];
 
-    // Podio vertical
+    // Vertical podium
     const podiumLines = podium
         .slice(0, 3)
         .map((p, i) => `${medals[i]} **${displayNameForGeoId(p.geoId)}**`)
         .join("\n");
 
-    // Constancia en una sola línea con comas
+    // Constancy award for perfect attendance
     const perfectLine = perfect.length
     ? perfect.map((geoId) => displayNameForGeoId(geoId)).join(", ")
     : t("weekly.perfect.none");
 
-    // ✅ NUEVO: renderizar tabla como imagen
+    // render table as image
     const imagePath = await renderTableImage({
         title: t("weekly.image.title", { title }),
         lines: table.split("\n"),
         outputFile: `./data/weekly-${weekStartKey}.png`,
     });
 
-    // ✅ Mensaje sin bloque de código (para móvil)
+    // Message without code block (for mobile)
     const message =
         t("weekly.message.header", { title, ping }) +
         "\n\n" +

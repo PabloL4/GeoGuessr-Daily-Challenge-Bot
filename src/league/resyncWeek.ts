@@ -30,7 +30,7 @@ export async function resyncWeek(weekStartKey: string): Promise<{ ok: true; days
     for (const date of dates) {
         const dayObj = week.days?.[date];
         const token = dayObj?.token;
-        if (!token) continue; // si no hay challenge ese día, saltamos
+        if (!token) continue; //if there is no challenge that day, we skip it
 
         const highscores = await getHighscoresByToken(token);
         if (!highscores?.items?.length) continue;
@@ -51,7 +51,7 @@ export async function resyncWeek(weekStartKey: string): Promise<{ ok: true; days
         totalPlayers += highscores.items.length;
         updatedDays++;
 
-        // fecha del día a rellenar (importante)
+        //date of the day to fill in (important)
         await recordDay({
             date: new Date(`${date}T12:00:00Z`),
             token,

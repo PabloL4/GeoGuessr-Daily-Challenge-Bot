@@ -121,7 +121,7 @@ export const postToDiscord = async (message: string, imagePath?: string) => {
         } catch (err) {
             console.error(t("discord.errors.failedToPost"), err);
         } finally {
-            // ✅ borrar el PNG después de subirlo (Discord ya lo guarda)
+            // delete the PNG after uploading it (Discord already saves it)
             if (imagePath && fs.existsSync(imagePath)) {
                 try {
                     fs.unlinkSync(imagePath);
@@ -147,16 +147,16 @@ export const postChallengeToDiscord = async (settings: ChallengeSettingsForPost)
     //     roundCount: settings.roundCount,
     // });
     const timestamp = Math.floor(Date.now() / 1000);
-    const roleId = process.env.DISCORD_ROLE_DAILY_ID; // solo números
+    const roleId = process.env.DISCORD_ROLE_DAILY_ID;
     const ping = roleId
     ? `<@&${roleId}>`
     : t("discord.ping.dailyChallenge");
 
     const roundCount = settings.roundCount ?? 5;
-    const timeLimit = settings.timeLimit ?? 60; // solo para que TS no se queje en el mensaje
+    const timeLimit = settings.timeLimit ?? 60; 
 
 
-    // Texto “gracioso”
+    // “funny” text
     const extraLines: string[] = [];
 
     if (roundCount === 10) {
@@ -195,11 +195,10 @@ const message =
 
 
 export const postResultToDiscord = async (ranking: ChallengeHighscores) => {
-    const roleId = process.env.DISCORD_ROLE_DAILY_ID; // solo números
+    const roleId = process.env.DISCORD_ROLE_DAILY_ID;
     const ping = roleId ? `<@&${roleId}>` : t("discord.ping.dailyChallenge");
-    //const idx = settings.dayIndex ? ` (#${settings.dayIndex})` : "";
 
-    // ✅ SIEMPRE ordenar por score (desc)
+    // ALWAYS sort by score (desc)
     const sortedItems = [...ranking.highscores.items].sort((a: any, b: any) => {
         const sa = Number(a?.game?.player?.totalScore?.amount ?? 0);
         const sb = Number(b?.game?.player?.totalScore?.amount ?? 0);
@@ -211,7 +210,7 @@ export const postResultToDiscord = async (ranking: ChallengeHighscores) => {
         const position = `${index + 1}.`;
         const name = entry.game.player.nick;
 
-        // locale depende de idioma
+        // locale depends on language
         const locale = getLocale();
         const score = Number(entry.game.player.totalScore.amount).toLocaleString(locale);
 

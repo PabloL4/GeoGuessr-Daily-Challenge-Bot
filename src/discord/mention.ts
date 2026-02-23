@@ -54,7 +54,7 @@ export function displayNameForGeoId(geoId: string): string {
 }
 
 
-// Para podio/constancia: SIN bandera, y con mención si existe
+//For podium/constancy: WITHOUT flag, and with mention if it exists
 export function podiumNameForGeoId(geoId: string): string {
     const store = readStore();
     const p = store.players[geoId];
@@ -63,7 +63,7 @@ export function podiumNameForGeoId(geoId: string): string {
     return p.discordId ? `<@${p.discordId}>` : p.nick;
 }
 
-// Para tablas (code block): CON bandera + nick, pero NUNCA mención (<@...>)
+// For tables (code block): WITH flag + nickname, but NEVER mention (<@...>)
 export function tableNameForGeoId(geoId: string): string {
     const store = readStore();
     const p = store.players[geoId];

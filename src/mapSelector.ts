@@ -61,11 +61,11 @@ function pickMode(map: MapConfig, lastMode?: AllowedMode): AllowedMode {
     const allowed = map.modes.allowed;
     const recommended = map.modes.recommended ?? [];
 
-    // 70% recomendado si existe
+    //70% recommended if it exists
     let pool: AllowedMode[] =
         recommended.length > 0 && Math.random() < 0.7 ? recommended : allowed;
 
-    // evita repetir modo de ayer si se puede
+    //avoid repeating yesterday's mode if you can
     if (lastMode && pool.length > 1 && pool.includes(lastMode)) {
         const filtered = pool.filter((m) => m !== lastMode);
         if (filtered.length) pool = filtered;

@@ -61,8 +61,8 @@ export function monthRange(year: number, month1to12: number): { start: string; e
     const m = String(month1to12).padStart(2, "0");
     const start = `${year}-${m}-01`;
 
-    // último día del mes
-    const dt = new Date(year, month1to12, 0); // mes siguiente, día 0 => último del mes actual
+    //last day of the month
+    const dt = new Date(year, month1to12, 0); //next month, day 0 => last of the current month
     const end = `${year}-${m}-${String(dt.getDate()).padStart(2, "0")}`;
 
     return { start, end };
@@ -197,7 +197,6 @@ export function getBestSingleDay(days: any[], opts?: { rounds?: number }): BestD
     let best: BestDay | null = null;
 
     for (const d of days) {
-        // si quieres filtrar por 5 o 10 rondas
         if (targetRounds != null) {
             const rc = d.roundCount ?? d.rounds ?? d.challenge?.roundCount;
             if (!Number.isFinite(rc) || rc !== targetRounds) continue;
@@ -344,9 +343,9 @@ export function getPlayerMonthlyTotals(days: FlatDay[]): PlayerTotalRow[] {
 export type MapAvgRow = {
     mapId: string;
     mapName: string;
-    plays: number;        // total partidas (sumando jugadores)
-    days: number;         // días que salió el mapa
-    avg: number;          // media global (todas las partidas)
+    plays: number;        // total games (adding players)
+    days: number;         // days the map came out
+    avg: number;          // global average (all games)
 };
 
 export type MapBestPlayerRow = {

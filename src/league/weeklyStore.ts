@@ -64,7 +64,7 @@ function writeStore(store: Store): void {
     ensureDataDir();
     const tmp = `${STORE_PATH}.tmp`;
     fs.writeFileSync(tmp, JSON.stringify(store, null, 2), "utf-8");
-    fs.renameSync(tmp, STORE_PATH); // replace atómico en la práctica
+    fs.renameSync(tmp, STORE_PATH); //atomic replace in practice
 }
 
 // --- Date helpers (Monday-based) ---
@@ -196,11 +196,11 @@ export function recordDay(params: {
 
     const existingDay = week.days[dateKey];
 
-    // ✅ dayIndex estable y NO se pisa si ya existe
+  // dayIndex stable and NOT stepped on if it already exists
     const computedDayIndex = getDayIndexFor(new Date(`${dateKey}T12:00:00Z`));
     const finalDayIndex = existingDay?.dayIndex ?? computedDayIndex;
 
-    // ✅ no pisar token si ya había uno guardado (salvo que no exista)
+    // Don't overwrite if already exists one
     const finalToken = existingDay?.token ?? params.token;
 
     week.days[dateKey] = {
@@ -208,7 +208,7 @@ export function recordDay(params: {
         dayIndex: finalDayIndex,
         token: finalToken,
 
-        // ✅ conservar lo existente si no viene challenge nuevo
+        //Keep the existing if there is no a new challenge
         mapId: params.challenge?.mapId ?? existingDay?.mapId,
         mapName: params.challenge?.mapName ?? existingDay?.mapName,
         mapUrl: params.challenge?.mapUrl ?? existingDay?.mapUrl,
@@ -216,7 +216,7 @@ export function recordDay(params: {
         roundCount: params.challenge?.roundCount ?? existingDay?.roundCount,
         timeLimit: params.challenge?.timeLimit ?? existingDay?.timeLimit,
 
-        // ✅ merge scores para que el resync añada sin borrar
+        // Merge scores to avoid problems with resync
         scores: { ...(existingDay?.scores ?? {}), ...(params.scores ?? {}) },
     };
 
@@ -301,7 +301,7 @@ export function buildWeeklyTable(weekStartKey: string): { title: string; table: 
         const rawNick = player?.nick ?? r.name;
         const maxNick = Number(process.env.MAX_NICK_LEN ?? "16");
         const nick = rawNick.length > maxNick ? rawNick.slice(0, maxNick - 1) + "…" : rawNick;
-        const country = (player?.country ?? "").toUpperCase(); // ISO2 ya normalizado
+        const country = (player?.country ?? "").toUpperCase(); //ISO2 normalized
         const flag = flagEmoji(country);
 
 
@@ -313,10 +313,9 @@ export function buildWeeklyTable(weekStartKey: string): { title: string; table: 
     });
 
     // Headers
-    // const headers = ["#", "NOMBRE", "D1", "D2", "D3", "D4", "D5", "D6", "D7", "TOTAL"];
     const headers = ["#", t("weeklyStore.headers.name"), ...dCols.map((n) => `D${n}`), t("weeklyStore.headers.total")];
 
-    // Anchos dinámicos + mínimos
+    //Dynamic + minimum widths
     const visibleLen = (s: string) =>
         s.replace(/\p{Extended_Pictographic}/gu, "XX").length;
     const rankWidth = Math.max(2, String(printed.length).length);
@@ -550,7 +549,7 @@ export function getWeeklyBestDailyByRoundsAndMode(
         const roundCount = day.roundCount;
         if (!Number.isFinite(roundCount) || roundCount !== targetRounds) continue;
 
-        // ✅ filtra por modo del día
+        //filter by mode of the day
         if (day.mode !== targetMode) continue;
 
         const dayIndex = day.dayIndex ?? getDayIndexFor(new Date(date));

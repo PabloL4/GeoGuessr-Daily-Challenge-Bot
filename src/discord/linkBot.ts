@@ -5,7 +5,7 @@ import {
     unlinkGeoFromDiscordByDiscordId,
 } from "../league/linkGeoToDiscord.js";
 
-// 1) Definimos el comando
+// 1) We define the command
 const linkCommand = new SlashCommandBuilder()
     .setName("link")
     .setDescription("Vincula tu GeoGuessr userId con tu usuario de Discord")
@@ -38,24 +38,24 @@ async function registerCommands(discordToken: string, clientId: string, guildId:
 
 const unlinkCommand = new SlashCommandBuilder()
     .setName("unlink")
-    .setDescription("Desvincula un GeoGuessr ID de un usuario de Discord (admin)")
+    .setDescription("Unlink a GeoGuessr ID from a Discord user (admin)")
     .setDMPermission(true)
     .addStringOption((opt) =>
         opt
             .setName("geoid")
-            .setDescription("GeoGuessr userId a desvincular")
+            .setDescription("GeoGuessr userId to unbind")
             .setRequired(false)
     )
     .addUserOption((opt) =>
         opt
             .setName("discord")
-            .setDescription("Usuario de Discord a desvincular")
+            .setDescription("Discord user to unlink")
             .setRequired(false)
     );
 
 
 export async function startLinkBot(): Promise<void> {
-    // ✅ leer env AQUÍ (ya con dotenv cargado en el main)
+    // ✅ read env HERE (already with dotenv loaded in the main)
     const discordToken = process.env.DISCORD_TOKEN;
     const guildId = process.env.DISCORD_GUILD_ID;
 
@@ -78,7 +78,7 @@ export async function startLinkBot(): Promise<void> {
             if (!interaction.isChatInputCommand()) return;
 
             /* =========================
-               /link (usuarios normales)
+               /link (normal users)
                ========================= */
             if (interaction.commandName === "link") {
                 const geoId = interaction.options.getString("geoid", true);
@@ -94,8 +94,8 @@ export async function startLinkBot(): Promise<void> {
                 await interaction.reply({
                     content:
                         res.status === "already_linked"
-                            ? `✅ Ya estabas vinculado.\nGeoGuessr: \`${geoId.trim()}\`\nDiscord: <@${discordId}>`
-                            : `✅ Vinculado correctamente.\nGeoGuessr: \`${geoId.trim()}\`\nDiscord: <@${discordId}>`,
+                            ? `✅ You were already linked.\nGeoGuessr: \`${geoId.trim()}\`\nDiscord: <@${discordId}>`
+                            : `✅ Linked successfully.\nGeoGuessr: \`${geoId.trim()}\`\nDiscord: <@${discordId}>`,
                     ephemeral: true,
                 });
 
@@ -108,7 +108,7 @@ export async function startLinkBot(): Promise<void> {
             if (interaction.commandName === "unlink") {
                 if (!ADMIN_DISCORD_IDS.has(interaction.user.id)) {
                     await interaction.reply({
-                        content: "❌ No tienes permisos para usar este comando.",
+                        content: "❌ You do not have permissions to use this command.",
                         ephemeral: true,
                     });
                     return;
@@ -119,7 +119,7 @@ export async function startLinkBot(): Promise<void> {
 
                 if (!geoId && !user) {
                     await interaction.reply({
-                        content: "❌ Debes indicar `geoid` o `discord`.",
+                        content: "❌ You must indicate `geoid` or `discord`.",
                         ephemeral: true,
                     });
                     return;
@@ -135,7 +135,7 @@ export async function startLinkBot(): Promise<void> {
                 }
 
                 await interaction.reply({
-                    content: `✅ Desvinculación correcta.\nGeoGuessr ID: \`${res.geoId}\``,
+                    content: `✅ Successful unlink.\nGeoGuessr ID: \`${res.geoId}\``,
                     ephemeral: true,
                 });
 
@@ -145,7 +145,7 @@ export async function startLinkBot(): Promise<void> {
             console.error(e);
             if (interaction.isRepliable()) {
                 await interaction.reply({
-                    content: "❌ Error procesando el comando.",
+                    content: "❌ Error processing the command.",
                     ephemeral: true,
                 });
             }
