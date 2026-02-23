@@ -272,9 +272,16 @@ if (mode === '--standalone') {
     });
 
     // Semanal: resumen (domingo 18:05)
-    cron.schedule('5 18 * * 0', async () => {
+    cron.schedule('57 17 * * 0', async () => {
+        //console.log("Weekly summary cron running...");
         await maybePostWeeklySummary();
     });
+
+    //TEST
+    // cron.schedule('* * * * *', async () => {
+    //     console.log("Weekly summary cron running...");
+    //     await maybePostWeeklySummary("2026-01-19"); // pon aquí el weekStart real que exista
+
 
     // 📅 Resumen mensual — día 1 a las 18:15 (mes anterior)
     cron.schedule('15 18 1 * *', async () => {

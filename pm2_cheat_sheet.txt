@@ -18,7 +18,7 @@ pm2 start npm \
   --name geodaily \
   --cwd /home/pablo/daily_challengue/daily-geoguessr-bot \
   --cron-restart="10 3 * * *" \
-  -- run start -- --standalone
+  -- run standalone
 
 pm2 start npm \
   --name geodaily-link \
