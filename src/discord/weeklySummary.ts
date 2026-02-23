@@ -3,6 +3,7 @@ import { buildWeeklyTable, getWeeklyPodium, getWeeklyPerfectAttendance } from ".
 import { displayNameForGeoId } from "./mention.js";
 import { renderTableImage } from "./renderTableImage.js";
 import { getWeeklyBestDailyByRounds, getWeeklyBestDailyByRoundsAndMode } from "../league/weeklyStore.js";
+import { t, getLocale } from "../i18n/index.js";
 
 
 /**
@@ -12,7 +13,7 @@ import { getWeeklyBestDailyByRounds, getWeeklyBestDailyByRoundsAndMode } from ".
 export async function postWeeklySummaryToDiscord(weekStartKey: string): Promise<void> {
 
     const roleId = process.env.DISCORD_ROLE_DAILY_ID; // solo números
-    const ping = roleId ? `<@&${roleId}>` : "@Desafío Diario";
+    const ping = roleId ? `<@&${roleId}>` : t("discord.ping.dailyChallenge");
 
     const podium = getWeeklyPodium(weekStartKey);
     const perfect = getWeeklyPerfectAttendance(weekStartKey);
@@ -25,7 +26,7 @@ export async function postWeeklySummaryToDiscord(weekStartKey: string): Promise<
 
     const best10 = getWeeklyBestDailyByRounds(weekStartKey, 10);
 
-    const fmtPts = (n: number) => n.toLocaleString("es-ES");
+    const fmtPts = (n: number) => n.toLocaleString(getLocale());
 
     const extraAwardsLines: string[] = [];
 
@@ -33,28 +34,55 @@ export async function postWeeklySummaryToDiscord(weekStartKey: string): Promise<
 
     if (best5Nmpz) {
         extraAwardsLines.push(
-            `· ${displayNameForGeoId(best5Nmpz.geoId)} por la mejor puntuación en **NMPZ (5️⃣ rondas)**: **${fmtPts(best5Nmpz.score)}** en el desafío **#${best5Nmpz.dayIndex}**.`
+            t("weekly.awards.bestByMode", {
+                user: displayNameForGeoId(best5Nmpz.geoId),
+                mode: "NMPZ",
+                roundsEmoji: "5️⃣",
+                rounds: 5,
+                score: fmtPts(best5Nmpz.score),
+                dayIndex: best5Nmpz.dayIndex
+            })
         );
     }
+
     if (best5Nm) {
         extraAwardsLines.push(
-            `· ${displayNameForGeoId(best5Nm.geoId)} por la mejor puntuación en **NM (5️⃣ rondas)**: **${fmtPts(best5Nm.score)}** en el desafío **#${best5Nm.dayIndex}**.`
+            t("weekly.awards.bestByMode", {
+                user: displayNameForGeoId(best5Nm.geoId),
+                mode: "NM",
+                roundsEmoji: "5️⃣",
+                rounds: 5,
+                score: fmtPts(best5Nm.score),
+                dayIndex: best5Nm.dayIndex
+            })
         );
     }
 
     if (best5Move) {
         extraAwardsLines.push(
-            `· ${displayNameForGeoId(best5Move.geoId)} por la mejor puntuación en **Move (5️⃣ rondas)**: **${fmtPts(best5Move.score)}** en el desafío **#${best5Move.dayIndex}**.`
+            t("weekly.awards.bestByMode", {
+                user: displayNameForGeoId(best5Move.geoId),
+                mode: "Move",
+                roundsEmoji: "5️⃣",
+                rounds: 5,
+                score: fmtPts(best5Move.score),
+                dayIndex: best5Move.dayIndex
+            })
         );
     }
+
     if (best10) {
         extraAwardsLines.push(
-            `· ${displayNameForGeoId(best10.geoId)} por obtener el puntaje más alto en las partidas de 🔟 rondas, con **${fmtPts(best10.score)}** en el desafío **#${best10.dayIndex}**.`
+            t("weekly.awards.best10Rounds", {
+                user: displayNameForGeoId(best10.geoId),
+                score: fmtPts(best10.score),
+                dayIndex: best10.dayIndex
+            })
         );
     }
 
     const extraAwardsBlock = extraAwardsLines.length
-        ? `Felicitaciones, también, a:\n${extraAwardsLines.join("\n")}\n\n`
+        ? t("weekly.awards.block", { lines: extraAwardsLines.join("\n") }) + "\n\n"
         : "";
 
 
@@ -68,30 +96,30 @@ export async function postWeeklySummaryToDiscord(weekStartKey: string): Promise<
 
     // Constancia en una sola línea con comas
     const perfectLine = perfect.length
-        ? perfect.map((geoId) => displayNameForGeoId(geoId)).join(", ")
-        : "(nadie todavía)";
+    ? perfect.map((geoId) => displayNameForGeoId(geoId)).join(", ")
+    : t("weekly.perfect.none");
 
     // ✅ NUEVO: renderizar tabla como imagen
     const imagePath = await renderTableImage({
-        title: `Resumen semanal — ${title}`,
+        title: t("weekly.image.title", { title }),
         lines: table.split("\n"),
         outputFile: `./data/weekly-${weekStartKey}.png`,
     });
 
     // ✅ Mensaje sin bloque de código (para móvil)
     const message =
-        `## RESUMEN ${title} ${ping}\n\n` +
-        `¡Hola a todos! Les dejo el resumen con la clasificación general de los últimos 7 desafíos.\n\n` +
+        t("weekly.message.header", { title, ping }) +
+        "\n\n" +
+        t("weekly.message.intro") +
+        "\n\n" +
         (podium.length
-            ? `Felicitaciones a los ganadores de la semana:\n\n${podiumLines}\n\n`
+            ? t("weekly.message.podiumBlock", { podiumLines }) + "\n\n"
             : "") +
         extraAwardsBlock +
         (perfect.length
-            ? `Muchas gracias también a quienes jugararon **todos los desafíos (7/7)**:\n${perfectLine}\n\n`
-            : ""
-        ) +
-
-        `Comienza una nueva ronda de desafíos, así que ¡prepárense!`;
+            ? t("weekly.message.perfectBlock", { perfectLine }) + "\n\n"
+            : "") +
+        t("weekly.message.outro");
 
     await postToDiscord(message, imagePath);
 }

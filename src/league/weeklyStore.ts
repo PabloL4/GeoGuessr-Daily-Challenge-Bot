@@ -4,7 +4,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { normalizeCountryCode } from "../players.js";
-
+import { t, getLocale } from "../i18n/index.js";
 
 type PlayerKey = string; // nick or stable id
 
@@ -110,6 +110,21 @@ export function getDayIndexFor(date: Date): number {
 
     return baseDay + daysBetween(start, date);
 }
+
+export function getDayIndexByToken(token: string): number | null {
+    const store = readStore();
+
+    for (const week of Object.values(store.weeks ?? {})) {
+        for (const day of Object.values(week.days ?? {})) {
+            if (day.token === token) {
+                return day.dayIndex ?? null;
+            }
+        }
+    }
+
+    return null;
+}
+
 
 function flagEmoji(country?: string): string {
     if (!country) return "";
@@ -231,25 +246,26 @@ export function buildWeeklyTable(weekStartKey: string): { title: string; table: 
     const store = readStore();
     const week = store.weeks[weekStartKey];
 
-    console.log("[league] buildWeeklyTable weekStartKey =", weekStartKey, "available weeks =", Object.keys(store.weeks));
-    if (!week) throw new Error(`Week not found: ${weekStartKey}`);
+    const locale = getLocale();
 
-    // Dates Monday..Sunday
-    const monday = new Date(weekStartKey);
-    monday.setHours(0, 0, 0, 0);
+    console.log("[league] buildWeeklyTable weekStartKey =", weekStartKey, "available weeks =", Object.keys(store.weeks));
+    if (!week) throw new Error(t("weeklyStore.errors.weekNotFound", { weekStartKey }));
+
+    // Dates Monday..Sunday (UTC estable)
+    const monday = new Date(`${weekStartKey}T00:00:00Z`);
 
     const dates: string[] = [];
     for (let i = 0; i < 7; i++) {
         const d = new Date(monday);
-        d.setDate(d.getDate() + i);
-        dates.push(toYmd(d));
+        d.setUTCDate(d.getUTCDate() + i);
+        dates.push(d.toISOString().slice(0, 10)); // YYYY-MM-DD
     }
 
     // Resolve day indexes Dxxx for each date
     const dCols = dates.map((d) => {
         const day = week.days[d];
         if (day?.dayIndex) return day.dayIndex;
-        return getDayIndexFor(new Date(d));
+        return getDayIndexFor(new Date(`${d}T00:00:00Z`));
     });
 
     // Collect players
@@ -278,7 +294,7 @@ export function buildWeeklyTable(weekStartKey: string): { title: string; table: 
     const topN = Number(process.env.WEEKLY_TOP_N ?? "20");
     const sliced = rows.slice(0, topN);
 
-    const fmt = (n: number) => n.toLocaleString("es-ES");
+    const fmt = (n: number) => n.toLocaleString(locale);
 
     const printed = sliced.map((r, idx) => {
         const player = store.players[r.name]; // geoId
@@ -298,7 +314,7 @@ export function buildWeeklyTable(weekStartKey: string): { title: string; table: 
 
     // Headers
     // const headers = ["#", "NOMBRE", "D1", "D2", "D3", "D4", "D5", "D6", "D7", "TOTAL"];
-    const headers = ["#", "NOMBRE", ...dCols.map((n) => `D${n}`), "TOTAL"];
+    const headers = ["#", t("weeklyStore.headers.name"), ...dCols.map((n) => `D${n}`), t("weeklyStore.headers.total")];
 
     // Anchos dinámicos + mínimos
     const visibleLen = (s: string) =>
@@ -352,7 +368,7 @@ export function buildWeeklyTable(weekStartKey: string): { title: string; table: 
         );
     }
 
-    const title = `Semana ${week.weekIndex} (${week.weekStart})`;
+    const title = t("weeklyStore.title", { weekIndex: week.weekIndex, weekStart: week.weekStart });
     return { title, table: lines.join("\n") };
 }
 

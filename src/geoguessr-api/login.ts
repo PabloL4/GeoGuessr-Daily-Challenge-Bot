@@ -3,7 +3,7 @@ import fs from 'fs/promises';
 import fetch, { RequestInit } from 'node-fetch';
 import path from 'path';
 
-dotenv.config(); // .envファイルから環境変数を読み込む
+dotenv.config();
 
 const loginUrl = 'https://www.geoguessr.com/api/v3/accounts/signin';
 const cookieFilePath = path.resolve('cookie.txt');

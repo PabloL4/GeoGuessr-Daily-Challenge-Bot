@@ -1,3 +1,5 @@
+import { t } from "../i18n/index.js"; 
+
 type Mode = "Move" | "NM" | "NMPZ";
 
 type ChallengeMeta = {
@@ -7,44 +9,37 @@ type ChallengeMeta = {
 };
 
 export function buildChallengeIntro(meta: ChallengeMeta): string {
-    const { mode, timeLimit, roundCount } = meta;
+  const { mode, timeLimit, roundCount } = meta;
 
-    const lines: string[] = [];
+  const lines: string[] = [];
 
-    /* =========
-       RONDAS
-       ========= */
-    if (roundCount === 10) {
-        lines.push("🔟 **Especial 10 rondas** — hoy toca maratón 🏃‍♂️");
-    }
+  // RONDAS
+  if (roundCount === 10) {
+    lines.push(t("challenge.intro.rounds.special10"));
+  }
 
-    /* =========
-       TIEMPO
-       ========= */
-    if (timeLimit === 10) {
-        lines.push("⚡ **Rondas relámpago** — ¡decide en 10 segundos!");
-    } else if (timeLimit <= 20) {
-        lines.push("🔥 **Muy rápido** — sin tiempo para dudar");
-    } else if (timeLimit <= 30) {
-        lines.push("⏱️ **Ritmo ágil** — piensa rápido");
-    } else if (timeLimit <= 60) {
-        lines.push("😌 **Día tranquilito** — respira y observa");
-    } else {
-        lines.push("🧘 **Modo relax** — explora con calma");
-    }
+  // TIEMPO
+  if (timeLimit === 10) {
+    lines.push(t("challenge.intro.time.10"));
+  } else if (timeLimit <= 20) {
+    lines.push(t("challenge.intro.time.20"));
+  } else if (timeLimit <= 30) {
+    lines.push(t("challenge.intro.time.30"));
+  } else if (timeLimit <= 60) {
+    lines.push(t("challenge.intro.time.60"));
+  } else {
+    lines.push(t("challenge.intro.time.relax"));
+  }
 
-    /* =========
-       MODO
-       ========= */
-    if (mode === "NMPZ") {
-        lines.push("🚫🧭 **No Move, No Pan, No Zoom**");
-    } else if (mode === "NM") {
-        lines.push("🚫 **No Move**");
-    } else {
-        lines.push("🕹️ **Move permitido**");
-    }
+  // MODO
+  if (mode === "NMPZ") {
+    lines.push(t("challenge.intro.mode.nmpz"));
+  } else if (mode === "NM") {
+    lines.push(t("challenge.intro.mode.nm"));
+  } else {
+    lines.push(t("challenge.intro.mode.move"));
+  }
 
-    if (lines.length === 0) return "";
-
-    return lines.join("\n");
+  if (lines.length === 0) return "";
+  return lines.join("\n");
 }

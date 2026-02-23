@@ -1,5 +1,6 @@
 import fs from "node:fs";
 import path from "node:path";
+import { t } from "../i18n/index.js";
 
 const STORE_PATH = path.join(process.cwd(), "data", "league.json");
 
@@ -16,7 +17,7 @@ export function linkGeoToDiscord(geoIdRaw: string, discordId: string): LinkResul
     const geoId = geoIdRaw.trim();
 
     if (!isLikelyGeoId(geoId)) {
-        return { ok: false, reason: "Ese GeoGuessr ID no tiene un formato válido (copia el userId, no el nick)." };
+        return { ok: false, reason: t("link.invalidGeoIdFormat") };
     }
 
     const raw = fs.existsSync(STORE_PATH) ? fs.readFileSync(STORE_PATH, "utf8") : "{}";
@@ -24,33 +25,23 @@ export function linkGeoToDiscord(geoIdRaw: string, discordId: string): LinkResul
 
     store.players ??= {};
 
-    // 1) Si este geoId ya está vinculado a otro Discord -> rechazar
     const existingDiscordForGeo = store.players?.[geoId]?.discordId as string | undefined;
     if (existingDiscordForGeo && existingDiscordForGeo !== discordId) {
-        return {
-            ok: false,
-            reason:
-                "Ese GeoGuessr ID ya está vinculado a otro usuario de Discord. Si es un error, pídele a un admin que lo revise.",
-        };
+        return { ok: false, reason: t("link.geoIdAlreadyLinkedToOtherDiscord") };
     }
 
-    // 2) Si este Discord ya está vinculado a OTRO geoId -> rechazar
     for (const [otherGeoId, info] of Object.entries<any>(store.players)) {
         if (otherGeoId === geoId) continue;
         if (info?.discordId === discordId) {
             return {
                 ok: false,
-                reason:
-                    `Tu Discord ya está vinculado a otro GeoGuessr ID (${otherGeoId}). Si quieres cambiarlo, pide a un admin que lo resetee.`,
+                reason: t("link.discordAlreadyLinkedToOtherGeoId", { otherGeoId }),
             };
         }
     }
 
-    // 3) Vinculación (idempotente)
     store.players[geoId] ??= {};
     store.players[geoId].discordId = discordId;
-
-    // fs.writeFileSync(STORE_PATH, JSON.stringify(store, null, 2), "utf8");
 
     return { ok: true, status: existingDiscordForGeo ? "already_linked" : "linked" };
 }
@@ -66,12 +57,11 @@ export function unlinkGeoFromDiscordByGeoId(geoIdRaw: string): UnlinkResult {
     const store = JSON.parse(raw) as any;
 
     if (!store.players?.[geoId]?.discordId) {
-        return { ok: false, reason: "Ese GeoGuessr ID no está vinculado a ningún Discord." };
+        return { ok: false, reason: t("link.geoIdNotLinked") };
     }
 
     delete store.players[geoId].discordId;
 
-    // fs.writeFileSync(STORE_PATH, JSON.stringify(store, null, 2), "utf8");
     const tmp = `${STORE_PATH}.tmp`;
     fs.writeFileSync(tmp, JSON.stringify(store, null, 2), "utf8");
     fs.renameSync(tmp, STORE_PATH);
@@ -91,8 +81,6 @@ export function unlinkGeoFromDiscordByDiscordId(discordId: string): UnlinkResult
         }
     }
 
-    return { ok: false, reason: "Ese usuario de Discord no está vinculado a ningún GeoGuessr ID." };
+    return { ok: false, reason: t("link.discordNotLinked") };
 }
-
-
 

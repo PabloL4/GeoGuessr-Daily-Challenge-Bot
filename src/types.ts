@@ -24,12 +24,13 @@ export interface ChallengeSettingsForPost {
     mode: GameMode;
     token: string;
 
-    // NEW
     timeLimit?: number;
     roundCount?: number;
 
     mapId?: string;
     mapUrl?: string;
+
+    dayIndex?: number;
 }
 
 

@@ -8,15 +8,18 @@ import { createChallenge, getHighscores } from './geoguessr-api/index.js';
 import { defaultChallenge } from './settings.js';
 import { postWeeklySummaryToDiscord } from "./discord/index.js";
 import { getPreviousWeekKeyIfMonday, markWeekAsPosted, clearWeek } from "./league/weeklyStore.js";
-import { recordDay } from "./league/weeklyStore.js";
+import { recordDay, getDayIndexFor  } from "./league/weeklyStore.js";
 import { postYearlySummary } from "./yearlySummary.js";
 import { postMonthlySummaryToDiscord } from "./monthlySummary.js";
 import { getHighscoresByToken } from "./geoguessr-api/highscores.js";
 import { resyncWeek } from "./league/resyncWeek.js";
 import { postToDiscord } from "./discord/discordPoster.js";
-
+import { setLang, resolveLang, t } from "./i18n/index.js";
 
 dotenv.config();
+
+setLang(resolveLang(process.env.BOT_LANG));
+
 const app = express();
 const port = 25000;
 
@@ -52,9 +55,11 @@ const challenge = async () => {
     });
 
     if (ChallengeSettings) {
+        const now = new Date();
+        const dayIndex = getDayIndexFor(now);
         // ✅ NUEVO: guardar metadata del challenge en league.json (sin scores aún)
         recordDay({
-            date: new Date(),
+            date: now,
             token: ChallengeSettings.token,
             scores: {}, // todavía no hay highscores
             challenge: {
@@ -62,13 +67,17 @@ const challenge = async () => {
                 mapName: ChallengeSettings.name,
                 mapUrl: ChallengeSettings.mapUrl ?? `https://www.geoguessr.com/maps/${challengePayload.map}`,
                 mode: toStoreMode(ChallengeSettings.mode),
-
+                //dayIndex: ChallengeSettings.dayIndex ?? 0, // lo importante es que no sea undefined, el día real se asigna al guardar el día completo con recordDay()
                 roundCount: ChallengeSettings.roundCount ?? challengePayload.roundCount,
                 timeLimit: ChallengeSettings.timeLimit ?? challengePayload.timeLimit,
             },
         });
 
-        await postChallengeToDiscord(ChallengeSettings);
+        //await postChallengeToDiscord(ChallengeSettings);
+        await postChallengeToDiscord({
+            ...ChallengeSettings,
+            dayIndex,
+        });
     }
 };
 
@@ -130,19 +139,19 @@ const maybePostWeeklySummary = async (forcedWeekStart?: string) => {
 
 app.get('/challenge', (req, res) => {
     challenge();
-    res.send('Challenge created.\n');
+    res.send(t("server.challenge.created"));
 });
 
 app.get('/highscores', (req, res) => {
     highscores();
-    res.send('Highscores posted.\n');
+    res.send(t("server.highscores.posted"));
 });
 
 app.get("/weekly", async (req, res) => {
     try {
         const weekStart = String(req.query.weekStart ?? "");
         if (!weekStart) {
-            res.status(400).send("Missing weekStart. Example: /weekly?weekStart=2026-01-12");
+            res.status(400).send(t("server.weekly.missingWeekStart"));
             return;
         }
 
@@ -154,7 +163,7 @@ app.get("/weekly", async (req, res) => {
             console.error("[/weekly] message:", err.message);
             console.error("[/weekly] stack:", err.stack);
         }
-        res.status(500).send("Failed to post weekly summary.");
+        res.status(500).send(t("server.weekly.failed"));
     }
 });
 
@@ -164,7 +173,7 @@ app.get("/monthly", async (req, res) => {
         const month = Number(req.query.month); // 1..12
 
         if (!Number.isFinite(year) || !Number.isFinite(month) || month < 1 || month > 12) {
-            return res.status(400).send("Use /monthly?year=2026&month=1 (month=1..12)");
+            return res.status(400).send(t("server.monthly.badParams"));
         }
 
         await postMonthlySummaryToDiscord(year, month);
@@ -220,7 +229,7 @@ app.get("/backfill", async (req, res) => {
         }
 
         if (!dayObj?.token) {
-            res.status(404).send(`Day not found or missing token for ${date}`);
+            res.status(404).send(t("server.backfill.notFound", { date }));
             return;
         }
 
@@ -257,7 +266,11 @@ app.get("/backfill", async (req, res) => {
         });
 
         res.send(
-            `OK backfilled ${date} (week=${foundWeekKey}) with ${highscores.items.length} players`
+            t("server.backfill.ok", {
+                date,
+                week: foundWeekKey ?? "",
+                count: highscores.items.length
+            })
         );
     } catch (e: any) {
         console.error(e);
@@ -283,7 +296,7 @@ app.post("/say", async (req, res) => {
         const provided = String(req.header("x-admin-token") ?? "");
 
         if (!adminToken || provided !== adminToken) {
-            return res.status(401).send("Unauthorized");
+            return res.status(401).send(t("server.unauthorized"));
         }
 
         // const message = String(req.body?.message ?? "").trim();
@@ -345,12 +358,12 @@ app.get("/challenge/test", async (req, res) => {
 const mode = process.argv[2];
 
 app.listen(port, () => {
-    console.log(`Server listening at http://localhost:${port}`);
+    console.log(t("server.listening", { url: `http://localhost:${port}` }));
 });
 
 if (mode === '--standalone') {
     if (!didLogStandalone) {
-        console.log("Running in standalone mode.");
+        console.log(t("server.standalone"));
         didLogStandalone = true;
     }
     // Diario: recoger highscores (17:55)
@@ -384,7 +397,7 @@ if (mode === '--standalone') {
         const year = now.getMonth() === 0 ? now.getFullYear() - 1 : now.getFullYear();
         const month = now.getMonth() === 0 ? 12 : now.getMonth(); // 1–12
 
-        console.log(`[cron] Posting monthly summary for ${year}-${month}`);
+        console.log(t("cron.monthly.posting", { year, month }));
         await postMonthlySummaryToDiscord(year, month);
     });
 

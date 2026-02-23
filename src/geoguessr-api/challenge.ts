@@ -145,3 +145,4 @@ export const playGame = async (token: ChallengeToken): Promise<void> => {
         console.error('Error playing game:', error);
     }
 }
+

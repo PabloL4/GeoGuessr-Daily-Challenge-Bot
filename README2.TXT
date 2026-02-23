@@ -162,6 +162,12 @@ curl http://localhost:25000/highscores
 # Weekly summary
 curl http://localhost:25000/weekly?weekStart=2026-01-19
 
+# Monthly summary
+curl "http://localhost:25000/monthly?year=2026&month=01"
+
+# Yearly
+curl "http://localhost:25000/yearly?year=2026"
+
 # Backfill a past day
 curl http://localhost:25000/backfill?date=2026-01-21
 
