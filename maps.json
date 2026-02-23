@@ -1,0 +1,106 @@
+{
+    "maps": [
+        {
+            "name": "A Community World",
+            "url": "https://www.geoguessr.com/maps/62a44b22040f04bd36e8a914",
+            "modes": {
+                "allowed": ["move", "nm", "nmpz"]
+            }
+        },
+        {
+            "name": "An Arbitrary World",
+            "url": "https://www.geoguessr.com/maps/6089bfcff6a0770001f645dd",
+            "modes": {
+                "allowed": ["move", "nm", "nmpz"],
+                "recommended": ["nmpz"]
+            }
+        },
+        {
+            "name": "A Souvlaki World",
+            "url": "https://www.geoguessr.com/maps/66c65a243165335bb951ec5b",
+            "modes": {
+                "allowed": ["move", "nm", "nmpz"],
+                "recommended": ["nm", "nmpz"]
+            }
+        },
+        {
+            "name": "A Varied World",
+            "url": "https://www.geoguessr.com/maps/64ce812adc7614680516ff8c",
+            "modes": {
+                "allowed": ["move", "nm", "nmpz"]
+            }
+        },
+        {
+            "name": "A Rural World",
+            "url": "https://www.geoguessr.com/maps/5be0de51fe3a84037ca36447",
+            "modes": {
+                "allowed": ["move", "nm", "nmpz"],
+                "recommended": ["nmpz"]
+            }
+        },
+        {
+            "name": "A Pro World",
+            "url": "https://www.geoguessr.com/maps/6620b311f64a7b842b2ca83a",
+            "modes": {
+                "allowed": ["move", "nm", "nmpz"]
+            }
+        },
+        {
+            "name": "Less-Extreme Regionguessing",
+            "url": "https://www.geoguessr.com/maps/658a3ef12255cca9e7f39c06",
+            "modes": {
+                "allowed": ["move", "nm", "nmpz"]
+            }
+        },
+        {
+            "name": "Terminus",
+            "url": "https://www.geoguessr.com/maps/64919f3c95165ff26469091a",
+            "modes": {
+                "allowed": ["move", "nm", "nmpz"]
+            }
+        },
+        {
+            "name": "Aesthetic World",
+            "url": "https://www.geoguessr.com/maps/611e70006033f40001dc13d6",
+            "modes": {
+                "allowed": ["move", "nm", "nmpz"]
+            }
+        },
+        {
+            "name": "A Skewed World",
+            "url": "https://www.geoguessr.com/maps/6165f7176c26ac00016bca3d",
+            "modes": {
+                "allowed": ["nmpz"],
+                "recommended": ["nmpz"]
+            }
+        },
+        {
+            "name": "Panoramic Views",
+            "url": "https://www.geoguessr.com/maps/6637b03d1e0559a6257ab71d",
+            "modes": {
+                "allowed": ["move", "nm", "nmpz"]
+            }
+        },
+        {
+            "name": "A Learning World",
+            "url": "https://www.geoguessr.com/maps/6078c830e945e900015f4a64",
+            "modes": {
+                "allowed": ["move", "nm", "nmpz"]
+            }
+        },
+        {
+            "name": "A Divisional World",
+            "url": "https://www.geoguessr.com/maps/61121b1e88f8fa0001407821",
+            "modes": {
+                "allowed": ["move", "nm", "nmpz"]
+            }
+        },
+        {
+            "name": "Town Squares of the World",
+            "url": "https://www.geoguessr.com/maps/5ffb6664ce04930001f8528b",
+            "modes": {
+                "allowed": ["move", "nm", "nmpz"]
+            }
+        }
+    ]
+}

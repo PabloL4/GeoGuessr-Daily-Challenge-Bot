@@ -62,7 +62,11 @@ npm start
 
 In this mode, the following endpoints are available:
 - `GET /challenge` - Triggers `challenge`.
+curl.exe  "http://localhost:25000/challenge"
 - `GET /highscores` - Triggers `highscores`.
+curl.exe  "http://localhost:25000/highscores"
+
+ curl.exe -i "http://localhost:25000/weekly?weekStart=2026-01-12" 
 
 #### Crontab Configuration
 

@@ -1,5 +1,5 @@
 import fs from 'fs/promises';
-import { ChallengePayload, ChallengeSettings } from "./types";
+import { ChallengePayload, ChallengeSettings } from "./types.js";
 
 export function createChallengePayload(settings: ChallengeSettings): ChallengePayload {
     const { map, mode } = settings;
