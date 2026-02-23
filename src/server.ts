@@ -13,12 +13,16 @@ import { postYearlySummary } from "./yearlySummary.js";
 import { postMonthlySummaryToDiscord } from "./monthlySummary.js";
 import { getHighscoresByToken } from "./geoguessr-api/highscores.js";
 import { resyncWeek } from "./league/resyncWeek.js";
-
+import { postToDiscord } from "./discord/discordPoster.js";
 
 
 dotenv.config();
 const app = express();
 const port = 25000;
+
+app.use(express.json());
+app.use("/say", express.text({ type: "*/*" }));
+
 
 let didLogStandalone = false;
 
@@ -258,6 +262,46 @@ app.get("/backfill", async (req, res) => {
     } catch (e: any) {
         console.error(e);
         res.status(500).send(e?.message ?? "Error");
+    }
+});
+
+
+app.use((req, _res, next) => {
+    if (req.path === "/say") {
+        console.log("CT:", req.headers["content-type"]);
+    }
+    next();
+});
+app.use("/say", express.text({ type: "*/*" }));
+
+app.post("/say", async (req, res) => {
+    console.log("body:", req.body);
+
+    try {
+        const adminToken = process.env.ADMIN_TOKEN;
+        const provided = String(req.header("x-admin-token") ?? "");
+
+        if (!adminToken || provided !== adminToken) {
+            return res.status(401).send("Unauthorized");
+        }
+
+        // const message = String(req.body?.message ?? "").trim();
+        const message =
+            typeof req.body === "string"
+                ? req.body.trim()
+                : String(req.body?.message ?? "").trim();
+        if (!message) return res.status(400).send("Missing message");
+
+        // evita mensajes gigantes
+        if (message.length > 1800) {
+            return res.status(400).send("Message too long (max ~1800 chars)");
+        }
+
+        await postToDiscord(message);
+        return res.send("ok");
+    } catch (e) {
+        console.error("[/say] error", e);
+        return res.status(500).send("error");
     }
 });
 

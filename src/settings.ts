@@ -88,14 +88,22 @@ function hasTooManyMove(recent: Array<{ mode?: AllowedModeLower }>, limit = 1): 
 function pickMode(
     map: MapConfig,
     lastMode: AllowedModeLower | undefined,
-    recent: Array<{ mode?: AllowedModeLower }>
+    recent: Array<{ mode?: AllowedModeLower }>,
+    opts?: { forbidMove?: boolean }
 ): AllowedModeLower {
     const allowed = map.modes.allowed;
     const recommended = map.modes.recommended ?? [];
+    const forbidMove = !!opts?.forbidMove;
 
     // 70% recomendado si existe
     let pool: AllowedModeLower[] =
         recommended.length > 0 && Math.random() < 0.7 ? recommended : allowed;
+
+    // ✅ NEW: si hoy Move está prohibido (p.ej. día 10 rondas), lo quitamos del pool si se puede
+    if (forbidMove && pool.includes("move")) {
+        const withoutMove = pool.filter((m) => m !== "move");
+        if (withoutMove.length > 0) pool = withoutMove;
+    }
 
     // 🚫 evitar repetir modo de ayer si se puede
     if (lastMode && pool.length > 1 && pool.includes(lastMode)) {
@@ -200,21 +208,29 @@ export async function defaultChallenge(): Promise<ChallengeSettings> {
     const chosen = weightedPick(pool, (m) => m.weight ?? 1);
 
     const map = urlToMapId(chosen.url);
+
+    // ✅ NEW: rounds rule (y nos sirve para prohibir Move en TEN_ROUNDS_DAY)
+    const weekday = getWeekdayUTC();
+    const roundCount = weekday === TEN_ROUNDS_DAY ? 10 : 5;
+
     let modeLower = pickMode(chosen, lastMode, recent);
 
     // ✅ Regla: máximo 1 MOVE por semana
     const movesSoFar = countMovesThisWeek(new Date());
     if (movesSoFar >= 1 && modeLower === "move") {
-        // fuerza a elegir NM/NMPZ si el mapa lo permite
         const allowed = chosen.modes?.allowed ?? ["move", "nm", "nmpz"];
         const nonMove = allowed.filter((m: string) => m !== "move");
         modeLower = (nonMove.includes("nmpz") ? "nmpz" : nonMove[0] ?? "nm") as any;
     }
-    const mode = toGameMode(modeLower);
 
-    // ✅ NEW: rounds + timeLimit rules
-    const weekday = getWeekdayUTC();
-    const roundCount = weekday === TEN_ROUNDS_DAY ? 10 : 5;
+    // ✅ NEW: Regla extra — si hoy es TEN_ROUNDS_DAY, NO puede ser Move
+    if (weekday === TEN_ROUNDS_DAY && modeLower === "move") {
+        const allowed = chosen.modes?.allowed ?? ["move", "nm", "nmpz"];
+        const nonMove = allowed.filter((m: string) => m !== "move");
+        modeLower = (nonMove.includes("nmpz") ? "nmpz" : nonMove[0] ?? "nm") as any;
+    }
+
+    const mode = toGameMode(modeLower);
 
     let timeLimit: number;
     if (mode === "Move") {
@@ -227,5 +243,3 @@ export async function defaultChallenge(): Promise<ChallengeSettings> {
 
     return { map, mode, timeLimit, roundCount };
 }
-
-
