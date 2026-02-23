@@ -91,16 +91,24 @@ export async function postMonthlySummaryToDiscord(year: number, month1to12: numb
         : "";
 
 
-    const bestDay = getBestSingleDay(days);
-    const bestDayBlock = bestDay
-        ? `**🌟 Mejor día del mes:** ${displayNameForGeoId(bestDay.geoId)} — **${bestDay.score.toLocaleString("es-ES")}** pts ` +
-        `(desafío **#${bestDay.dayIndex}**, ${bestDay.date})` +
-        (bestDay.mapName ? ` — ${bestDay.mapName}` : "") +
-        (bestDay.mode ? ` · ${bestDay.mode}` : "") +
-        (bestDay.roundCount ? ` · ${bestDay.roundCount}R` : "") +
-        (bestDay.timeLimit ? ` · ${bestDay.timeLimit}s` : "") +
-        `\n\n`
-        : "";
+    const bestDay5 = getBestSingleDay(days, { rounds: 5 });
+    const bestDay10 = getBestSingleDay(days, { rounds: 10 });
+
+    const formatBestDay = (label: string, bd: any) =>
+    `**🌟 Mejor día del mes (${label}):** ${displayNameForGeoId(bd.geoId)} — **${bd.score.toLocaleString("es-ES")}** pts ` +
+    `(desafío **#${bd.dayIndex}**, ${bd.date})` +
+    (bd.mapName ? ` — ${bd.mapName}` : "") +
+    (bd.mode ? ` · ${bd.mode}` : "") +
+    (bd.roundCount ? ` · ${bd.roundCount}R` : "") +
+    (bd.timeLimit ? ` · ${bd.timeLimit}s` : "") +
+    `\n`;
+
+    const bestDayBlock =
+    (bestDay5 ? formatBestDay("5️⃣ rondas", bestDay5) : "") +
+    (bestDay10 ? formatBestDay("🔟 rondas", bestDay10) : "");
+
+const bestDayFinal = bestDayBlock ? bestDayBlock + "\n" : "";
+
 
     const minHalfDays = Number(process.env.MONTHLY_MIN_DAYS_PER_HALF ?? "2");
     const topImp = getTopImprovements(days, 3, minHalfDays);

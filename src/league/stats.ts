@@ -180,24 +180,44 @@ export type BestDayRow = {
     timeLimit?: number;
 };
 
-export function getBestSingleDay(days: FlatDay[]): BestDayRow | null {
-    let best: BestDayRow | null = null;
+type BestDay = {
+  geoId: string;
+  score: number;
+  dayIndex: number;
+  date: string;
+  mapName?: string;
+  mode?: string;
+  roundCount?: number;
+  timeLimit?: number;
+};
+
+export function getBestSingleDay(days: any[], opts?: { rounds?: number }): BestDay | null {
+    const targetRounds = opts?.rounds;
+
+    let best: BestDay | null = null;
 
     for (const d of days) {
-        const dayIndex = d.dayIndex;
-        for (const [geoId, score] of Object.entries(d.scores ?? {})) {
+        // si quieres filtrar por 5 o 10 rondas
+        if (targetRounds != null) {
+            const rc = d.roundCount ?? d.rounds ?? d.challenge?.roundCount;
+            if (!Number.isFinite(rc) || rc !== targetRounds) continue;
+        }
+
+        const scores = d.scores ?? {};
+        for (const [geoId, scoreRaw] of Object.entries(scores)) {
+            const score = Number(scoreRaw);
             if (!Number.isFinite(score)) continue;
 
-            if (!best || (score as number) > best.score) {
+            if (!best || score > best.score) {
                 best = {
                     geoId,
-                    score: score as number,
+                    score,
+                    dayIndex: d.dayIndex,
                     date: d.date,
-                    dayIndex,
                     mapName: d.mapName,
                     mode: d.mode,
-                    roundCount: (d as any).roundCount,
-                    timeLimit: (d as any).timeLimit,
+                    roundCount: d.roundCount,
+                    timeLimit: d.timeLimit,
                 };
             }
         }
@@ -205,6 +225,7 @@ export function getBestSingleDay(days: FlatDay[]): BestDayRow | null {
 
     return best;
 }
+
 
 export type ImprovementRow = {
     geoId: string;
