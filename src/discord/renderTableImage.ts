@@ -11,6 +11,9 @@ type RenderTableOptions = {
 };
 
 const FLAG_CACHE_DIR = path.join(process.cwd(), "data", "flags");
+const COLOR_TEXT = "#e5e7eb";
+const COLOR_TOTAL = "#facc15"; // amarillo suave
+
 
 function ensureFlagCacheDir() {
     if (!fs.existsSync(FLAG_CACHE_DIR)) fs.mkdirSync(FLAG_CACHE_DIR, { recursive: true });
@@ -104,12 +107,19 @@ ctx.fillStyle = "#e5e7eb";
 
 const flagSize = 28;   // tamaño icono bandera
 
-for (const line of lines) {
-    // Detecta marcador al inicio del "nombre": [FR] Nick...
-    // OJO: tus líneas empiezan por rank y espacios, así que buscamos el primer [CC]
-    const m = line.match(/\[([A-Z]{2})\]/);
+    for (const line of lines) {
+        const isPlayerRow = /^\s*\d+/.test(line);
+        if (!isPlayerRow) {
+            ctx.font = `${fontSize}px ${monoFont}`;
+            ctx.fillText(line, padding, y + fontSize);
+            y += lineHeight;
+            continue;
+        }
+        // Detecta marcador al inicio del "nombre": [FR] Nick...
+        // OJO: tus líneas empiezan por rank y espacios, así que buscamos el primer [CC]
+        const m = line.match(/\[([A-Z]{2})\]/);
 
-    if (m) {
+        if (m) {
         const cc = m[1];
 
         // Partimos la línea en: antes + marcador + después
@@ -117,27 +127,32 @@ for (const line of lines) {
         const after = line.slice((m.index ?? 0) + m[0].length);
 
         // Dibuja "before" en monospace
-        ctx.font = `${fontSize}px ${monoFont}`;
         ctx.fillText(before, padding, y + fontSize);
+        ctx.font = `${fontSize}px ${monoFont}`;
+// Asegura que medimos con la misma fuente monospace
+ctx.font = `${fontSize}px ${monoFont}`;
 
-        // Calcula x donde va la bandera
-        const beforeW = ctx.measureText(before).width;
+const beforeW = ctx.measureText(before).width;
 
-        // Descarga/carga bandera
-        const flagPath = await getFlagPngPath(cc);
-        if (flagPath) {
-            const img = await loadImage(flagPath);
-            // Y de la bandera centrada en la línea
-            ctx.drawImage(img, padding + beforeW, y + (lineHeight - flagSize) / 2, flagSize, flagSize);
-        } else {
-            // fallback: si no hay imagen, escribe CC
-            ctx.fillText(cc, padding + beforeW, y + fontSize);
-        }
+// ancho que ocuparía el marcador original en monospace
+const marker = `[${cc}] `;
+const markerW = ctx.measureText(marker).width;
 
-        // Dibuja el resto, desplazado para que no pise la bandera
-        const gap = 10;
-        const offsetX = beforeW + flagSize + gap;
-        ctx.fillText(after, padding + offsetX, y + fontSize);
+// Descarga/carga bandera
+const flagPath = await getFlagPngPath(cc);
+if (flagPath) {
+    const img = await loadImage(flagPath);
+
+    // Bandera centrada dentro del espacio reservado del marcador
+    const flagX = padding + beforeW + (markerW - flagSize) / 2;
+    ctx.drawImage(img, flagX, y + (lineHeight - flagSize) / 2, flagSize, flagSize);
+} else {
+    // fallback: si no hay imagen, escribe el marcador literal (mantiene alineación)
+    ctx.fillText(marker, padding + beforeW, y + fontSize);
+}
+
+// ✅ Muy importante: el resto empieza donde empezaría si existiera "[CC] "
+ctx.fillText(after.trimStart(), padding + beforeW + markerW, y + fontSize);
     } else {
         // Línea normal
         ctx.font = `${fontSize}px ${monoFont}`;

@@ -265,19 +265,21 @@ export function buildWeeklyTable(weekStartKey: string): { title: string; table: 
 
     const fmt = (n: number) => n.toLocaleString("es-ES");
 
-const printed = sliced.map((r, idx) => {
-    const player = store.players[r.name]; // geoId
-    const nick = player?.nick ?? r.name;
-    const country = (player?.country ?? "").toUpperCase(); // ISO2 ya normalizado
-    const flag = flagEmoji(country);
+    const printed = sliced.map((r, idx) => {
+        const player = store.players[r.name]; // geoId
+        const rawNick = player?.nick ?? r.name;
+        const maxNick = Number(process.env.MAX_NICK_LEN ?? "16");
+        const nick = rawNick.length > maxNick ? rawNick.slice(0, maxNick - 1) + "…" : rawNick; 
+        const country = (player?.country ?? "").toUpperCase(); // ISO2 ya normalizado
+        const flag = flagEmoji(country);
 
-    
-    const cells = r.perDay.map((v) => (v == null ? "-" : fmt(v)));
-    const totalStr = fmt(r.total);
-    const cc = country || "";               // "FR", "ES", ...
-    const nameWithFlag = cc ? `[${cc}] ${nick}` : nick;
-    return { rank: idx + 1, nick, cc, nameWithFlag, cells, totalStr };
-});
+
+        const cells = r.perDay.map((v) => (v == null ? "-" : fmt(v)));
+        const totalStr = fmt(r.total);
+        const cc = country || "";               // "FR", "ES", ...
+        const nameWithFlag = cc ? `[${cc}] ${nick}` : nick;
+        return { rank: idx + 1, nick, cc, nameWithFlag, cells, totalStr };
+    });
 
     // Headers
     const headers = ["#", "NOMBRE", "D1", "D2", "D3", "D4", "D5", "D6", "D7", "TOTAL"];
@@ -286,7 +288,7 @@ const printed = sliced.map((r, idx) => {
     const visibleLen = (s: string) =>
         s.replace(/\p{Extended_Pictographic}/gu, "XX").length;
     const rankWidth = Math.max(2, String(printed.length).length);
-const nameWidth = Math.max(12, ...printed.map((r) => r.nameWithFlag.length));
+    const nameWidth = Math.max(12, ...printed.map((r) => r.nameWithFlag.length));
 
     const dayWidths = Array.from({ length: 7 }, (_, i) =>
         Math.max(6, headers[i + 2].length, ...printed.map((r) => r.cells[i].length))
@@ -322,17 +324,17 @@ const nameWidth = Math.max(12, ...printed.map((r) => r.nameWithFlag.length));
 
     const lines: string[] = [headerLine, dividerLine];
 
-for (const r of printed) {
-    lines.push(
-        padL(String(r.rank), rankWidth) +
-        "  " +
-        padR(r.nameWithFlag, nameWidth) +
-        sep +
-        r.cells.map((c, i) => padL(c, dayWidths[i])).join(sep) +
-        sep +
-        padL(r.totalStr, totalWidth)
-    );
-}
+    for (const r of printed) {
+        lines.push(
+            padL(String(r.rank), rankWidth) +
+            "  " +
+            padR(r.nameWithFlag, nameWidth) +
+            sep +
+            r.cells.map((c, i) => padL(c, dayWidths[i])).join(sep) +
+            sep +
+            padL(r.totalStr, totalWidth)
+        );
+    }
 
     const title = `Semana ${week.weekIndex} (${week.weekStart})`;
     return { title, table: lines.join("\n") };
