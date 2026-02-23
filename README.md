@@ -147,6 +147,9 @@ Create a `.env` file in the root of the project (or modify `.env.example`).
 
 ⚠️ IMPORTANT  
 Do NOT use `#` inside any token or password — it will be treated as a comment and break parsing.
+Do NOT commit your .env to version control.
+Make sure .env is included in your .gitignore.
+Keep your .env private.
 
 ```env
 # --------------------------------------
