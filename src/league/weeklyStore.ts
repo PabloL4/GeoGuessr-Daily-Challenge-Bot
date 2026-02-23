@@ -110,20 +110,20 @@ function flagEmoji(country?: string): string {
     return String.fromCodePoint(...[...cc].map(c => A + (c.charCodeAt(0) - 65)));
 }
 
-function countryCodeToFlagEmoji(code?: string): string {
-    if (!code) return "";
+// function countryCodeToFlagEmoji(code?: string): string {
+//     if (!code) return "";
 
-    const c = code.trim().toUpperCase();
-    if (!/^[A-Z]{2}$/.test(c)) return "";
+//     const c = code.trim().toUpperCase();
+//     if (!/^[A-Z]{2}$/.test(c)) return "";
 
-    const base = 0x1f1e6;
-    const A = "A".charCodeAt(0);
+//     const base = 0x1f1e6;
+//     const A = "A".charCodeAt(0);
 
-    return String.fromCodePoint(
-        base + (c.charCodeAt(0) - A),
-        base + (c.charCodeAt(1) - A)
-    );
-}
+//     return String.fromCodePoint(
+//         base + (c.charCodeAt(0) - A),
+//         base + (c.charCodeAt(1) - A)
+//     );
+// }
 
 
 
@@ -265,33 +265,39 @@ export function buildWeeklyTable(weekStartKey: string): { title: string; table: 
 
     const fmt = (n: number) => n.toLocaleString("es-ES");
 
-    // Preconstruimos filas imprimibles
-    const printed = sliced.map((r, idx) => {
-        const player = store.players[r.name]; // geoId
-        const nick = player?.nick ?? r.name;
-        const country = (player?.country ?? "").toUpperCase(); // ISO2 ya normalizado
+const printed = sliced.map((r, idx) => {
+    const player = store.players[r.name]; // geoId
+    const nick = player?.nick ?? r.name;
+    const country = (player?.country ?? "").toUpperCase(); // ISO2 ya normalizado
+    const flag = flagEmoji(country);
 
-        const cells = r.perDay.map((v) => (v == null ? "-" : fmt(v)));
-        const totalStr = fmt(r.total);
+    const nameWithFlag = flag ? `${flag} ${nick}` : nick;
 
-        return { rank: idx + 1, nick, country, cells, totalStr };
-    });
+    const cells = r.perDay.map((v) => (v == null ? "-" : fmt(v)));
+    const totalStr = fmt(r.total);
+
+    return { rank: idx + 1, nick, flag, nameWithFlag, cells, totalStr };
+});
 
     // Headers
-    const headers = ["#", "NOMBRE", "PAÍS", "D1", "D2", "D3", "D4", "D5", "D6", "D7", "TOTAL"];
+    const headers = ["#", "NOMBRE", "D1", "D2", "D3", "D4", "D5", "D6", "D7", "TOTAL"];
 
     // Anchos dinámicos + mínimos
+    const visibleLen = (s: string) =>
+        s.replace(/\p{Extended_Pictographic}/gu, "XX").length;
     const rankWidth = Math.max(2, String(printed.length).length);
-    const nameWidth = Math.max(12, ...printed.map((r) => r.nick.length));
-    const countryWidth = 4;
+const nameWidth = Math.max(12, ...printed.map((r) => r.nameWithFlag.length));
 
     const dayWidths = Array.from({ length: 7 }, (_, i) =>
-        Math.max(6, headers[i + 3].length, ...printed.map((r) => r.cells[i].length))
+        Math.max(6, headers[i + 2].length, ...printed.map((r) => r.cells[i].length))
     );
-    const totalWidth = Math.max(6, headers[10].length, ...printed.map((r) => r.totalStr.length));
+    const totalWidth = Math.max(6, headers[9].length, ...printed.map((r) => r.totalStr.length));
 
-    const padR = (s: string, w: number) => (s.length >= w ? s : s + " ".repeat(w - s.length));
-    const padL = (s: string, w: number) => (s.length >= w ? s : " ".repeat(w - s.length) + s);
+
+    const padR = (s: string, w: number) => {
+        const len = visibleLen(s);
+        return len >= w ? s : s + " ".repeat(w - len);
+    }; const padL = (s: string, w: number) => (s.length >= w ? s : " ".repeat(w - s.length) + s);
 
     const sep = " | ";
 
@@ -299,44 +305,37 @@ export function buildWeeklyTable(weekStartKey: string): { title: string; table: 
         padL(headers[0], rankWidth) +
         "  " +
         padR(headers[1], nameWidth) +
-        "  " +
-        padR(headers[2], countryWidth) +
         sep +
-        dayWidths.map((w, i) => padL(headers[i + 3], w)).join(sep) +
+        dayWidths.map((w, i) => padL(headers[i + 2], w)).join(sep) +
         sep +
-        padL(headers[10], totalWidth);
+        padL(headers[9], totalWidth);
 
     const dividerLine =
         "-".repeat(rankWidth) +
         "  " +
         "-".repeat(nameWidth) +
-        "  " +
-        "-".repeat(countryWidth) +
         sep +
         dayWidths.map((w) => "-".repeat(w)).join(sep) +
         sep +
         "-".repeat(totalWidth);
 
+
     const lines: string[] = [headerLine, dividerLine];
 
-    for (const r of printed) {
-        lines.push(
-            padL(String(r.rank), rankWidth) +
-            "  " +
-            padR(r.nick, nameWidth) +
-            "  " +
-            padR(r.country, countryWidth) +
-            sep +
-            r.cells.map((c, i) => padL(c, dayWidths[i])).join(sep) +
-            sep +
-            padL(r.totalStr, totalWidth)
-        );
-    }
+for (const r of printed) {
+    lines.push(
+        padL(String(r.rank), rankWidth) +
+        "  " +
+        padR(r.nameWithFlag, nameWidth) +
+        sep +
+        r.cells.map((c, i) => padL(c, dayWidths[i])).join(sep) +
+        sep +
+        padL(r.totalStr, totalWidth)
+    );
+}
 
     const title = `Semana ${week.weekIndex} (${week.weekStart})`;
     return { title, table: lines.join("\n") };
-
-
 }
 
 export function getWeeklyPodium(weekStartKey: string): Array<{ geoId: string; total: number }> {

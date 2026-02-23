@@ -1,6 +1,8 @@
 import { postToDiscord } from "./discordPoster.js";
 import { buildWeeklyTable, getWeeklyPodium, getWeeklyPerfectAttendance } from "../league/weeklyStore.js";
 import { displayNameForGeoId } from "./mention.js";
+import { renderTableImage } from "./renderTableImage.js";
+
 
 
 /**
@@ -15,7 +17,7 @@ export async function postWeeklySummaryToDiscord(weekStartKey: string): Promise<
 
     const medals = ["🥇", "🥈", "🥉"];
 
-    // Podio vertical (Opción A)
+    // Podio vertical
     const podiumLines = podium
         .slice(0, 3)
         .map((p, i) => `${medals[i]} **${displayNameForGeoId(p.geoId)}**`)
@@ -26,6 +28,14 @@ export async function postWeeklySummaryToDiscord(weekStartKey: string): Promise<
         ? perfect.map((geoId) => displayNameForGeoId(geoId)).join(", ")
         : "(nadie todavía)";
 
+    // ✅ NUEVO: renderizar tabla como imagen
+    const imagePath = await renderTableImage({
+        title: `Resumen semanal — ${title}`,
+        lines: table.split("\n"),
+        outputFile: `./data/weekly-${weekStartKey}.png`,
+    });
+
+    // ✅ Mensaje sin bloque de código (para móvil)
     const message =
         `## RESUMEN ${title} @Desafío Diario\n\n` +
         `¡Hola a todos! Les dejo el resumen con la clasificación general de los últimos 7 desafíos.\n\n` +
@@ -33,13 +43,8 @@ export async function postWeeklySummaryToDiscord(weekStartKey: string): Promise<
             ? `Felicitaciones a los ganadores de la semana:\n\n${podiumLines}\n\n`
             : "") +
         `Muchas gracias también a quienes jugaron **todos los desafíos (7/7)**:\n${perfectLine}\n\n` +
-        `Comienza una nueva ronda de desafíos, así que ¡prepárense!\n\n` +
-        "```" +
-        "\n" +
-        table +
-        "\n" +
-        "```";
+        `Comienza una nueva ronda de desafíos, así que ¡prepárense!`;
 
-    await postToDiscord(message);
+    await postToDiscord(message, imagePath);
 }
 

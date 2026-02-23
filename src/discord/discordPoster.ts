@@ -1,7 +1,6 @@
 import { Client, GatewayIntentBits, TextChannel } from 'discord.js';
 import dotenv from 'dotenv';
 import { ChallengeHighscores, ChallengeSettingsForPost } from '../types.js';
-import { buildChallengeIntro } from "./challengeMessage.js";
 
 dotenv.config();
 
@@ -53,7 +52,7 @@ const RELAX_MESSAGES = [
 ];
 
 
-export const postToDiscord = async (message: string) => {
+export const postToDiscord = async (message: string, imagePath?: string) => {
     const client = new Client({
         intents: [
             GatewayIntentBits.Guilds,
@@ -66,7 +65,10 @@ export const postToDiscord = async (message: string) => {
     client.once('ready', async () => {
         const channel = await client.channels.fetch(channelId);
         if (channel instanceof TextChannel) {
-            await channel.send(message);
+            await channel.send({
+                content: message,
+                files: imagePath ? [imagePath] : [],
+            });
         } else {
             console.error('Channel not found or is not text-based.');
         }
