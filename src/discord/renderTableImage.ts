@@ -1,7 +1,6 @@
-import { createCanvas } from "canvas";
+import { createCanvas, loadImage } from "canvas";
 import fs from "fs";
 import path from "path";
-import { loadImage } from "canvas";
 import fetch from "node-fetch";
 
 type RenderTableOptions = {
@@ -11,9 +10,10 @@ type RenderTableOptions = {
 };
 
 const FLAG_CACHE_DIR = path.join(process.cwd(), "data", "flags");
+
 const COLOR_TEXT = "#e5e7eb";
 const COLOR_TOTAL = "#facc15"; // amarillo suave
-
+const COLOR_TOTAL_BG = "rgba(250, 204, 21, 0.15)"; // fondo suave para TOTAL
 
 function ensureFlagCacheDir() {
     if (!fs.existsSync(FLAG_CACHE_DIR)) fs.mkdirSync(FLAG_CACHE_DIR, { recursive: true });
@@ -54,6 +54,18 @@ async function getFlagPngPath(cc: string): Promise<string | null> {
     return filePath;
 }
 
+/**
+ * Separa el último "token" de la línea (TOTAL).
+ * Devuelve:
+ *  - left: todo hasta el espacio justo antes del TOTAL (incluye ese espacio)
+ *  - total: último token no-espacio
+ */
+function splitTotalSegment(line: string): { left: string; total: string } | null {
+    const m = line.match(/^(.*\s)(\S+)\s*$/);
+    if (!m) return null;
+    return { left: m[1], total: m[2] };
+}
+
 export async function renderTableImage({
     title,
     lines,
@@ -64,15 +76,12 @@ export async function renderTableImage({
     const padding = 40;
     const titleSize = title ? 36 : 0;
 
-    // Tabla
-const monoFont = `"Cascadia Mono", "Consolas", monospace`;
-const emojiFont = `"Segoe UI Emoji", "Apple Color Emoji", "Noto Color Emoji"`;
+    const monoFont = `"Cascadia Mono", "Consolas", monospace`;
 
     // 1) Canvas provisional para medir texto
     const tmp = createCanvas(10, 10);
     const tctx = tmp.getContext("2d");
-
-    tctx.font = `${fontSize}px monospace`;
+    tctx.font = `${fontSize}px ${monoFont}`;
     const maxTextWidth = Math.max(...lines.map((l) => tctx.measureText(l).width));
 
     const width = Math.ceil(maxTextWidth + padding * 2);
@@ -94,74 +103,122 @@ const emojiFont = `"Segoe UI Emoji", "Apple Color Emoji", "Noto Color Emoji"`;
     // Título
     if (title) {
         ctx.font = `bold ${titleSize}px Sans`;
-        ctx.fillStyle = "#e5e7eb";
+        ctx.fillStyle = COLOR_TEXT;
         ctx.fillText(title, padding, y + titleSize);
         y += titleSize + 20;
     }
 
-    // Tabla
-    ctx.font = `${fontSize}px monospace`;
-    ctx.fillStyle = "#e5e7eb";
+    const normalMono = `${fontSize}px ${monoFont}`;
+    const boldMono = `bold ${fontSize}px ${monoFont}`;
 
-ctx.fillStyle = "#e5e7eb";
-
-const flagSize = 28;   // tamaño icono bandera
+    const flagSize = 28; // tamaño icono bandera
 
     for (const line of lines) {
-        const isPlayerRow = /^\s*\d+/.test(line);
+        // Detecta filas de jugadores (rank al inicio: " 1." / "12." etc)
+        const isPlayerRow = /\[[A-Z]{2}\]/.test(line);
+
+        // Líneas que no son jugadores (header, separadores, etc)
         if (!isPlayerRow) {
-            ctx.font = `${fontSize}px ${monoFont}`;
+            ctx.font = normalMono;
+            ctx.fillStyle = COLOR_TEXT;
             ctx.fillText(line, padding, y + fontSize);
             y += lineHeight;
             continue;
         }
-        // Detecta marcador al inicio del "nombre": [FR] Nick...
-        // OJO: tus líneas empiezan por rank y espacios, así que buscamos el primer [CC]
+
+        // Para resaltar TOTAL, preparamos split (sobre la línea completa)
+        const totalSeg = splitTotalSegment(line);
+
+        // Buscamos el marcador [CC]
         const m = line.match(/\[([A-Z]{2})\]/);
 
+        // Caso con bandera
         if (m) {
-        const cc = m[1];
+            const cc = m[1];
 
-        // Partimos la línea en: antes + marcador + después
-        const before = line.slice(0, m.index);
-        const after = line.slice((m.index ?? 0) + m[0].length);
+            // Partimos la línea en: before + "[CC]" + after
+            const before = line.slice(0, m.index);
+            const after = line.slice((m.index ?? 0) + m[0].length);
 
-        // Dibuja "before" en monospace
-        ctx.fillText(before, padding, y + fontSize);
-        ctx.font = `${fontSize}px ${monoFont}`;
-// Asegura que medimos con la misma fuente monospace
-ctx.font = `${fontSize}px ${monoFont}`;
+            ctx.font = normalMono;
+            ctx.fillStyle = COLOR_TEXT;
 
-const beforeW = ctx.measureText(before).width;
+            // Dibuja before
+            ctx.fillText(before, padding, y + fontSize);
 
-// ancho que ocuparía el marcador original en monospace
-const marker = `[${cc}] `;
-const markerW = ctx.measureText(marker).width;
+            // Medimos before (con la misma fuente monospace)
+            const beforeW = ctx.measureText(before).width;
 
-// Descarga/carga bandera
-const flagPath = await getFlagPngPath(cc);
-if (flagPath) {
-    const img = await loadImage(flagPath);
+            // Espacio reservado del marcador original en monospace: "[CC] "
+            const marker = `[${cc}] `;
+            const markerW = ctx.measureText(marker).width;
 
-    // Bandera centrada dentro del espacio reservado del marcador
-    const flagX = padding + beforeW + (markerW - flagSize) / 2;
-    ctx.drawImage(img, flagX, y + (lineHeight - flagSize) / 2, flagSize, flagSize);
-} else {
-    // fallback: si no hay imagen, escribe el marcador literal (mantiene alineación)
-    ctx.fillText(marker, padding + beforeW, y + fontSize);
-}
+            // Dibuja bandera (o fallback con el marcador literal)
+            const flagPath = await getFlagPngPath(cc);
+            if (flagPath) {
+                const img = await loadImage(flagPath);
+                const flagX = padding + beforeW + (markerW - flagSize) / 2;
+                ctx.drawImage(img, flagX, y + (lineHeight - flagSize) / 2, flagSize, flagSize);
+            } else {
+                ctx.fillText(marker, padding + beforeW, y + fontSize);
+            }
 
-// ✅ Muy importante: el resto empieza donde empezaría si existiera "[CC] "
-ctx.fillText(after.trimStart(), padding + beforeW + markerW, y + fontSize);
-    } else {
-        // Línea normal
-        ctx.font = `${fontSize}px ${monoFont}`;
-        ctx.fillText(line, padding, y + fontSize);
+            // Dibuja after (texto normal)
+            const afterText = after.trimStart();
+            const afterX = padding + beforeW + markerW;
+
+            ctx.font = normalMono;
+            ctx.fillStyle = COLOR_TEXT;
+            ctx.fillText(afterText, afterX, y + fontSize);
+
+            // Resalta TOTAL (fondo + bold + color)
+            if (totalSeg) {
+                const leftW = ctx.measureText(totalSeg.left).width;
+                const totalW = ctx.measureText(totalSeg.total).width;
+
+                const totalX = padding + leftW;
+                const rectY = y + (lineHeight - fontSize) / 2 - 2;
+                const rectH = fontSize + 6;
+
+                // ctx.fillStyle = COLOR_TOTAL_BG;
+                // ctx.fillRect(totalX - 6, rectY, totalW + 12, rectH);
+
+                ctx.font = boldMono;
+                ctx.fillStyle = COLOR_TOTAL;
+                ctx.fillText(totalSeg.total, totalX, y + fontSize);
+
+                // vuelve a normal
+                ctx.font = normalMono;
+                ctx.fillStyle = COLOR_TEXT;
+            }
+        } else {
+            // Fila jugador sin marcador [CC]
+            ctx.font = normalMono;
+            ctx.fillStyle = COLOR_TEXT;
+            ctx.fillText(line, padding, y + fontSize);
+
+            if (totalSeg) {
+                const leftW = ctx.measureText(totalSeg.left).width;
+                const totalW = ctx.measureText(totalSeg.total).width;
+
+                const totalX = padding + leftW;
+                const rectY = y + (lineHeight - fontSize) / 2 - 2;
+                const rectH = fontSize + 6;
+
+                // ctx.fillStyle = COLOR_TOTAL_BG;
+                // ctx.fillRect(totalX - 6, rectY, totalW + 12, rectH);
+
+                ctx.font = boldMono;
+                ctx.fillStyle = COLOR_TOTAL;
+                ctx.fillText(totalSeg.total, totalX, y + fontSize);
+
+                ctx.font = normalMono;
+                ctx.fillStyle = COLOR_TEXT;
+            }
+        }
+
+        y += lineHeight;
     }
-
-    y += lineHeight;
-}
-
 
     const outPath = path.resolve(outputFile);
     const buffer = canvas.toBuffer("image/png");

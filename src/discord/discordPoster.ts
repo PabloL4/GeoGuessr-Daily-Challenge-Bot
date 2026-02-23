@@ -1,6 +1,7 @@
 import { Client, GatewayIntentBits, TextChannel } from 'discord.js';
 import dotenv from 'dotenv';
 import { ChallengeHighscores, ChallengeSettingsForPost } from '../types.js';
+import fs from "node:fs";
 
 dotenv.config();
 
@@ -20,6 +21,9 @@ const ROUND_10_MESSAGES = [
     "🔟 **Rondas interminables** — como esa serie que no puedes soltar, ¡sigue el ritmo! 📺",
     "🔟 **Odisea global** — 10 rondas cruzando continentes, ¿dónde te deja el Street View esta vez? 🌍",
     "🔟 **Desafío decatlón** — 10 paradas en el mapa para coronarte como el rey de la geografía 👑",
+    "🔟 **Modo supervivencia** — 10 rondas seguidas, solo los exploradores de verdad llegan al final 🧭",
+    "🔟 **Tour mundial sin escalas** — 10 rondas y ni una maleta facturada ✈️🌍",
+
 ];
 
 const TIME_10_MESSAGES = [
@@ -31,6 +35,9 @@ const TIME_10_MESSAGES = [
     "⚡ **Tic-tac turbo** — cuenta hasta 10 y elige, o el reloj te elige a ti ⏰",
     "⚡ **Pinchazo rápido** — 10s para clavar el pin antes de que el mapa se mueva 🗺️",
     "⚡ **Intuición GPS** — ¡elige ya o el globo terráqueo te da la vuelta! 🔄",
+    "⚡ **Decisión instantánea** — 10s para leer el mundo y clavar el pin 🎯",
+    "⚡ **Street View en shock** — 10 segundos y el mapa ya te está juzgando 😬🗺️",
+
 ];
 
 const FAST_MESSAGES = [
@@ -42,6 +49,9 @@ const FAST_MESSAGES = [
     "🔥 **Turbo caos** — rápido como un rayo, o el juego te deja en el polvo 💨",
     "🔥 **Sprint callejero** — ¡pincha ya o las señales de tráfico te despistan! 🚦",
     "🔥 **Caos geográfico** — reacciona al rojo vivo, que el Street View no perdona 🔥🗺️",
+    "🔥 **Geografía a quemarropa** — o reaccionas o te pierdes en el mapa 💥🗺️",
+    "🔥 **Modo taquicardia** — señales borrosas, decisiones rápidas y cero perdón ❤️‍🔥",
+
 ];
 
 const MEDIUM_MESSAGES = [
@@ -53,6 +63,9 @@ const MEDIUM_MESSAGES = [
     "⏱️ **Marcha media** — ni héroe ni villano, solo tú dominando el centro 🎯",
     "⏱️ **Ritmo explorador** — analiza las placas y avanza, sin dramas ⏱️🌆",
     "⏱️ **Equilibrio mundial** — tiempo para otear horizontes sin perder el hilo 🏔️",
+    "⏱️ **Tiempo táctico** — lo justo para leer una señal… y no liarla 🚧",
+    "⏱️ **Ritmo detective** — observa, conecta pistas y clava el país 🕵️‍♂️🌍",
+
 ];
 
 const CALM_MESSAGES = [
@@ -64,6 +77,9 @@ const CALM_MESSAGES = [
     "😌 **Momento zen** — observa, decide, conquista... todo a su ritmo 🧘‍♂️",
     "😌 **Paseo virtual** — disfruta las vistas del mapa como un turista zen ✈️",
     "😌 **Calma cartográfica** — el mundo espera, elige con el alma serena 🗺️😊",
+    "😌 **Explorador paciente** — mira postes, matrículas y horizontes sin estrés 🔍",
+    "😌 **Modo postal** — disfruta del paisaje antes de poner el pin 📸🗺️",
+
 ];
 
 const RELAX_MESSAGES = [
@@ -75,6 +91,9 @@ const RELAX_MESSAGES = [
     "🧘 **Ola zen** — déjate llevar por el flujo, el mapa espera por ti 🌊",
     "🧘 **Meditación geográfica** — contempla el horizonte, las coordenadas se alinean solas 🌌",
     "🧘 **Viaje lento** — sorbe el paisaje como un té, GeoGuessr al ritmo de tu paz ☕🗺️",
+    "🧘 **Turismo virtual** — sin cronómetro en la nuca, solo tú y el mundo 🌍",
+    "🧘 **Mapa en slow motion** — observa con cariño, el país se revela solo 🐢🗺️",
+
 ];
 
 
@@ -88,18 +107,35 @@ export const postToDiscord = async (message: string, imagePath?: string) => {
         ],
     });
 
-    client.once('ready', async () => {
-        const channel = await client.channels.fetch(channelId);
-        if (channel instanceof TextChannel) {
-            console.log("[discord] posting to channelId =", channelId);
-            await channel.send({
-                content: message,
-                files: imagePath ? [imagePath] : [],
-            });
-        } else {
-            console.error('Channel not found or is not text-based.');
+    client.once("ready", async () => {
+        try {
+            const channel = await client.channels.fetch(channelId);
+
+            if (channel instanceof TextChannel) {
+                console.log("[discord] posting to channelId =", channelId);
+
+                await channel.send({
+                    content: message,
+                    files: imagePath ? [imagePath] : [],
+                });
+            } else {
+                console.error("Channel not found or is not text-based.");
+            }
+        } catch (err) {
+            console.error("[discord] failed to post:", err);
+        } finally {
+            // ✅ borrar el PNG después de subirlo (Discord ya lo guarda)
+            if (imagePath && fs.existsSync(imagePath)) {
+                try {
+                    fs.unlinkSync(imagePath);
+                    console.log("[discord] deleted image:", imagePath);
+                } catch (e) {
+                    console.error("[discord] failed to delete image:", imagePath, e);
+                }
+            }
+
+            client.destroy();
         }
-        client.destroy();
     });
 
     await client.login(discordToken);
