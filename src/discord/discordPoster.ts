@@ -145,13 +145,15 @@ export const postToDiscord = async (message: string, imagePath?: string) => {
 
 export const postChallengeToDiscord = async (settings: ChallengeSettingsForPost) => {
 
-    console.log("[discord] posting challenge with =", {
-        token: settings.token,
-        mode: settings.mode,
-        timeLimit: settings.timeLimit,
-        roundCount: settings.roundCount,
-    });
+    // console.log("[discord] posting challenge with =", {
+    //     token: settings.token,
+    //     mode: settings.mode,
+    //     timeLimit: settings.timeLimit,
+    //     roundCount: settings.roundCount,
+    // });
     const timestamp = Math.floor(Date.now() / 1000);
+    const roleId = process.env.DISCORD_ROLE_DAILY_ID; // solo números
+    const ping = roleId ? `<@&${roleId}>` : "@Desafío Diario";
 
     const roundCount = settings.roundCount ?? 5;
     const timeLimit = settings.timeLimit ?? 60; // solo para que TS no se queje en el mensaje
@@ -178,9 +180,9 @@ export const postChallengeToDiscord = async (settings: ChallengeSettingsForPost)
     const intro = extraLines.length ? `\n${extraLines.join("\n")}\n` : "\n";
 
     const message =
-        `## 🌍 Desafío diario — <t:${timestamp}:D>${intro}🔗 Enlace: ${challengeUrl(settings.token)}
-        🗺️ Mapa: ${settings.name}
-        🎮 Modo: ${settings.mode} (${timeLimit}s) — ${roundCount} rondas`;
+        `## 🌍 Desafío diario — <t:${timestamp}:D>  ${ping}${intro}🔗 Enlace: ${challengeUrl(settings.token)}  
+🗺️ Mapa: ${settings.name}
+🎮 Modo: ${settings.mode} (${timeLimit}s) — ${roundCount} rondas\n\n\u200B`;
 
     await postToDiscord(message);
 };

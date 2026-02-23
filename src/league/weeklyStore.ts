@@ -48,7 +48,7 @@ function ensureDataDir(): void {
 }
 
 function readStore(): Store {
-    console.log("[league] readStore STORE_PATH =", STORE_PATH);
+    // console.log("[league] readStore STORE_PATH =", STORE_PATH);
     ensureDataDir();
     if (!fs.existsSync(STORE_PATH)) return { weeks: {}, players: {} };
     const parsed = JSON.parse(fs.readFileSync(STORE_PATH, "utf-8")) as Partial<Store>;
@@ -204,7 +204,7 @@ export function recordDay(params: {
 
 
     store.weeks[weekStartKey] = week;
-    console.log("[league] writing to:", STORE_PATH);
+    // console.log("[league] writing to:", STORE_PATH);
     writeStore(store);
 }
 

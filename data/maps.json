@@ -84,7 +84,6 @@
             "url": "https://www.geoguessr.com/maps/5be0de51fe3a84037ca36447",
             "modes": {
                 "allowed": [
-                    "move",
                     "nm",
                     "nmpz"
                 ],
@@ -385,11 +384,45 @@
                 "allowed": [
                     "move",
                     "nm"
-                    
                 ]
             },
             "weight": 2,
             "cooldownDays": 14,
+            "tags": [
+                "spain",
+                "cities",
+                "urban"
+            ]
+        },
+        {
+            "id": "degen_pan_zoom_spain",
+            "name": "A Degen Pan and Zoom Spain",
+            "url": "https://www.geoguessr.com/maps/68b85fe6d7215b41106cba74",
+            "modes": {
+                "allowed": [
+                    "nmpz"
+                ]
+            },
+            "weight": 1,
+            "cooldownDays": 28,
+            "tags": [
+                "spain",
+                "panning",
+                "hard"
+            ]
+        },
+        {
+            "id": "espana_10k_habitantes",
+            "name": "ESPAÑA: 10k+ Habitantes",
+            "url": "https://www.geoguessr.com/maps/6946cc400a1e843527208fe4",
+            "modes": {
+                "allowed": [
+                    "move",
+                    "nm"
+                ]
+            },
+            "weight": 2,
+            "cooldownDays": 28,
             "tags": [
                 "spain",
                 "cities",

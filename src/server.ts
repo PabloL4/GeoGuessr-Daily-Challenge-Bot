@@ -32,12 +32,12 @@ const toStoreMode = (mode: string): "move" | "nm" | "nmpz" => {
 const challenge = async () => {
     const challengePayload = await defaultChallenge(); // { map, mode }
 
-    console.log("[challenge] payload decided =", {
-        map: challengePayload.map,
-        mode: challengePayload.mode,
-        timeLimit: (challengePayload as any).timeLimit,
-        roundCount: (challengePayload as any).roundCount,
-    });
+    // console.log("[challenge] payload decided =", {
+    //     map: challengePayload.map,
+    //     mode: challengePayload.mode,
+    //     timeLimit: (challengePayload as any).timeLimit,
+    //     roundCount: (challengePayload as any).roundCount,
+    // });
     const ChallengeSettings = await createChallenge(challengePayload);
 
     console.log("[challenge] createChallenge response =", {
