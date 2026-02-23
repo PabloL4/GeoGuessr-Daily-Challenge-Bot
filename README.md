@@ -235,6 +235,7 @@ _ncfa=your_cookie_value_here
 
 Without a valid cookie, GeoGuessr API requests will fail.
 
+---
 ## 🚀 Useful Commands
 
 ```bash
@@ -323,7 +324,7 @@ curl -X POST "http://localhost:25000/say" \
 
 MIT — please credit:
 
-- Extended version: PabloL4 (https://github.com/PabloL4/GeoGuessr-Daily-Challenge-Bot)
-- Original concept: sh-mug (https://github.com/sh-mug/daily-geoguessr-bot)
+- Extended version: @PabloL4 (https://github.com/PabloL4/GeoGuessr-Daily-Challenge-Bot)
+- Original concept: @sh-mug (https://github.com/sh-mug/daily-geoguessr-bot)
 
 Made with ❤️ for GeoGuessr communities
