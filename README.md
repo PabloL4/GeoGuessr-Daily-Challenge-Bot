@@ -13,8 +13,8 @@ This project is based on (and heavily extended from) `daily-geoguessr-bot` (by s
 ## 📦 Installation
 
 ```bash
-git clone https://github.com/yourname/yourrepo.git
-cd yourrepo
+git clone https://github.com/yourname/GeoGuessr-Daily-Challenge-Bot.git
+cd GeoGuessr-Daily-Challenge-Bot
 npm install
 npm run build
 npm start
@@ -247,7 +247,7 @@ curl -X POST "http://localhost:25000/say" \
 
 MIT — please credit:
 
-- Extended version: Pablo
+- Extended version: PabloL4 (https://github.com/PabloL4/GeoGuessr-Daily-Challenge-Bot)
 - Original concept: sh-mug (https://github.com/sh-mug/daily-geoguessr-bot)
 
 Made with ❤️ for GeoGuessr communities
