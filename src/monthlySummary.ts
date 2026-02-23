@@ -19,6 +19,9 @@ export async function postMonthlySummaryToDiscord(year: number, month1to12: numb
     const { start, end } = monthRange(year, month1to12);
     const days = getDaysInRange(start, end);
 
+    const roleId = process.env.DISCORD_ROLE_DAILY_ID; // solo números
+    const ping = roleId ? `<@&${roleId}>` : "@Desafío Diario";
+
     const topMaps = getTopMaps(days, 5);
 
     const topMapsBlock = topMaps.length
@@ -115,7 +118,7 @@ export async function postMonthlySummaryToDiscord(year: number, month1to12: numb
     const title = `📅 Resumen mensual — ${year}-${String(month1to12).padStart(2, "0")}`;
 
     const message =
-        `## ${title}\n\n` +
+        `## ${title} ${ping}\n\n` +
         `Días registrados: **${days.length}** (${start} → ${end})\n\n` +
         podiumBlock +
         topMapsBlock +

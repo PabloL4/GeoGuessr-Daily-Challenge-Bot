@@ -10,6 +10,10 @@ import { getWeeklyBestDailyByRounds } from "../league/weeklyStore.js";
  * weekStartKey must be the Monday date in YYYY-MM-DD (e.g. 2026-01-12).
  */
 export async function postWeeklySummaryToDiscord(weekStartKey: string): Promise<void> {
+
+    const roleId = process.env.DISCORD_ROLE_DAILY_ID; // solo números
+    const ping = roleId ? `<@&${roleId}>` : "@Desafío Diario";
+
     const podium = getWeeklyPodium(weekStartKey);
     const perfect = getWeeklyPerfectAttendance(weekStartKey);
 
@@ -61,7 +65,7 @@ export async function postWeeklySummaryToDiscord(weekStartKey: string): Promise<
 
     // ✅ Mensaje sin bloque de código (para móvil)
     const message =
-        `## RESUMEN ${title} @Desafío Diario\n\n` +
+        `## RESUMEN ${title} ${ping}\n\n` +
         `¡Hola a todos! Les dejo el resumen con la clasificación general de los últimos 7 desafíos.\n\n` +
         (podium.length
             ? `Felicitaciones a los ganadores de la semana:\n\n${podiumLines}\n\n`

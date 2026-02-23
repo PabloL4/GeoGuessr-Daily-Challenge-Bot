@@ -179,6 +179,9 @@ export const postChallengeToDiscord = async (settings: ChallengeSettingsForPost)
 
 
 export const postResultToDiscord = async (ranking: ChallengeHighscores) => {
+    const roleId = process.env.DISCORD_ROLE_DAILY_ID; // solo números
+    const ping = roleId ? `<@&${roleId}>` : "@Desafío Diario";
+    
     const leaderboard = ranking.highscores.items
         .map((entry: any, index: number) => {
             const position = `${index + 1}º`;
@@ -201,6 +204,9 @@ export const postResultToDiscord = async (ranking: ChallengeHighscores) => {
 🔗 Enlace: ${challengeUrl(ranking.token)}
 📈 Puntuación media: ${average}
 🏆 Ranking:
+
+
+${ping}
 \`\`\`
 ${leaderboard}
 \`\`\``;

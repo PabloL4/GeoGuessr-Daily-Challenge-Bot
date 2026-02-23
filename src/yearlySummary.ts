@@ -6,6 +6,8 @@ import { podiumNameForGeoId, tableNameForGeoId } from "./discord/mention.js";
 
 export async function postYearlySummary(year: number): Promise<void> {
     const ranking = getYearlyRanking(year);
+    const roleId = process.env.DISCORD_ROLE_DAILY_ID; // solo números
+    const ping = roleId ? `<@&${roleId}>` : "@Desafío Diario";
 
     if (!ranking.length) {
         await postToDiscord(`❌ No data available for year ${year}.`);
@@ -24,7 +26,7 @@ export async function postYearlySummary(year: number): Promise<void> {
     );
 
     const message =
-        `## 🏆 Resumen anual ${year}\n\n` +
+        `## 🏆 Resumen anual ${year} ${ping} \n\n` +
         `**Podio:**\n${podiumLines.join("\n")}\n\n` +
         `**Clasificación completa:**\n` +
         "```text\n" +
