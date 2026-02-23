@@ -272,6 +272,7 @@ app.use((req, _res, next) => {
     }
     next();
 });
+
 app.use("/say", express.text({ type: "*/*" }));
 
 app.post("/say", async (req, res) => {
@@ -302,6 +303,39 @@ app.post("/say", async (req, res) => {
     } catch (e) {
         console.error("[/say] error", e);
         return res.status(500).send("error");
+    }
+});
+
+app.get("/challenge/test", async (req, res) => {
+    try {
+        const asDateStr = String(req.query.asDate ?? "");
+        if (!asDateStr) {
+            return res.status(400).send('Missing asDate. Example: ?asDate=2026-02-02');
+        }
+
+        // Construimos Date en UTC “segura”
+        const asDate = new Date(`${asDateStr}T12:00:00Z`); // mediodía evita líos de TZ
+        if (Number.isNaN(asDate.getTime())) {
+            return res.status(400).send("Invalid asDate. Use YYYY-MM-DD");
+        }
+
+        const challengePayload = await defaultChallenge({ asDate });
+        const created = await createChallenge(challengePayload);
+
+        if (!created) return res.status(500).send("Failed to create challenge");
+
+        // postea en Discord (si quieres, o añade un flag dryRun)
+        await postChallengeToDiscord(created);
+
+        return res.json({
+            ok: true,
+            simulatedDate: asDateStr,
+            payload: challengePayload,
+            created,
+        });
+    } catch (e: any) {
+        console.error(e);
+        return res.status(500).send(e?.message ?? "error");
     }
 });
 

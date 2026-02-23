@@ -6,9 +6,8 @@ import { mondayOf, toYmd } from "./league/weeklyStore.js"; // ajusta ruta si hac
 
 const STORE_PATH = path.join(process.cwd(), "data", "league.json");
 
-function getWeekdayUTC(): number {
-    // 0 = domingo, 1 = lunes, ..., 6 = sábado
-    return new Date().getUTCDay();
+export function getWeekdayUTC(d: Date = new Date()): number {
+  return d.getUTCDay(); // 0=domingo ... 1=lunes ...
 }
 
 function randomFrom<T>(arr: T[]): T {
@@ -192,13 +191,17 @@ function countMovesThisWeek(today = new Date()): number {
 }
 
 
-export async function defaultChallenge(): Promise<ChallengeSettings> {
+// export async function defaultChallenge(): Promise<ChallengeSettings> {
+export async function defaultChallenge(opts?: { asDate?: Date }): Promise<ChallengeSettings> {
+
+    const now = opts?.asDate ?? new Date();
+    const todayYmd = now.toISOString().slice(0, 10);
+
     const raw = await readFile(MAPS_PATH, "utf8");
     const parsed = JSON.parse(raw) as MapsFile;
 
     if (!parsed.maps?.length) throw new Error("data/maps.json has no maps");
 
-    const todayYmd = new Date().toISOString().slice(0, 10);
     const recent = await readRecentPicks(60);
     const lastMode = recent[0]?.mode;
 
@@ -210,7 +213,7 @@ export async function defaultChallenge(): Promise<ChallengeSettings> {
     const map = urlToMapId(chosen.url);
 
     // ✅ NEW: rounds rule (y nos sirve para prohibir Move en TEN_ROUNDS_DAY)
-    const weekday = getWeekdayUTC();
+    const weekday = getWeekdayUTC(now);
     const roundCount = weekday === TEN_ROUNDS_DAY ? 10 : 5;
 
     let modeLower = pickMode(chosen, lastMode, recent);

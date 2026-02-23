@@ -148,6 +148,7 @@ WEEKLY_TOP_N=20
 
 npm install
 npm run build
+(npm run build -- --watch)
 npm start
 
 
@@ -163,6 +164,17 @@ curl http://localhost:25000/weekly?weekStart=2026-01-19
 
 # Backfill a past day
 curl http://localhost:25000/backfill?date=2026-01-21
+
+# Test a custom day challenge
+curl "http://localhost:25000/challenge/test?asDate=2026-02-02"
+
+
+# Send a custom message
+$token=ADMIN_TOKEN(IN .ENV)
+curl.exe -i -X POST "http://localhost:25000/say" `
+  -H "x-admin-token: $token" `
+  -H "Content-Type: text/plain; charset=utf-8" `
+  --data-raw "Hello!"
 
 
 npm run build
