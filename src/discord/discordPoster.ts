@@ -49,7 +49,7 @@ const FAST_MESSAGES = [
     "🔥 **Acelerador a tope** — reacciona ya, que el mundo no espera por nadie 🚀",
     "🔥 **Modo infierno** — decisiones a quemarropa, ¡o ardes o brillas! 🌋",
     "🔥 **Turbo caos** — rápido como un rayo, o el juego te deja en el polvo 💨",
-    "🔥 **Sprint callejero** — ¡pincha ya o las señales de tráfico te despistan! 🚦",
+    "🔥 **Sprint a toda pastilla** — ¡pincha ya o las señales de tráfico te despistan! 🚦",
     "🔥 **Caos geográfico** — reacciona al rojo vivo, que el Street View no perdona 🔥🗺️",
     "🔥 **Geografía a quemarropa** — o reaccionas o te pierdes en el mapa 💥🗺️",
     "🔥 **Modo taquicardia** — señales borrosas, decisiones rápidas y cero perdón ❤️‍🔥",
@@ -90,10 +90,10 @@ const RELAX_MESSAGES = [
     "🧘 **Pereza productiva** — avanza despacio, que a veces el atajo es el error más grande 😌",
     "🧘 **Siesta estratégica** — descansa la mente, las ideas geniales llegan solas 💤",
     "🧘 **Paseo filosófico** — cada paso cuenta, sin correr por correr 🌳",
-    "🧘 **Ola zen** — déjate llevar por el flujo, el mapa espera por ti 🌊",
+    "🧘 **Ola zen** — déjate llevar por el flow, el mapa espera por ti 🌊",
     "🧘 **Meditación geográfica** — contempla el horizonte, las coordenadas se alinean solas 🌌",
     "🧘 **Viaje lento** — sorbe el paisaje como un té, GeoGuessr al ritmo de tu paz ☕🗺️",
-    "🧘 **Turismo virtual** — sin cronómetro en la nuca, solo tú y el mundo 🌍",
+    "🧘 **Turismo virtual** — sin cronómetro detrás de la oreja, solo tú y el mundo 🌍",
     "🧘 **Mapa en slow motion** — observa con cariño, el país se revela solo 🐢🗺️",
 
 ];
@@ -144,10 +144,18 @@ export const postToDiscord = async (message: string, imagePath?: string) => {
 };
 
 export const postChallengeToDiscord = async (settings: ChallengeSettingsForPost) => {
+
+    console.log("[discord] posting challenge with =", {
+        token: settings.token,
+        mode: settings.mode,
+        timeLimit: settings.timeLimit,
+        roundCount: settings.roundCount,
+    });
     const timestamp = Math.floor(Date.now() / 1000);
 
     const roundCount = settings.roundCount ?? 5;
-    const timeLimit = settings.timeLimit ?? 60;
+    const timeLimit = settings.timeLimit ?? 60; // solo para que TS no se queje en el mensaje
+
 
     // Texto “gracioso”
     const extraLines: string[] = [];
@@ -171,8 +179,8 @@ export const postChallengeToDiscord = async (settings: ChallengeSettingsForPost)
 
     const message =
         `## 🌍 Desafío diario — <t:${timestamp}:D>${intro}🔗 Enlace: ${challengeUrl(settings.token)}
-🗺️ Mapa: ${settings.name}
-🎮 Modo: ${settings.mode} (${timeLimit}s) — ${roundCount} rondas`;
+        🗺️ Mapa: ${settings.name}
+        🎮 Modo: ${settings.mode} (${timeLimit}s) — ${roundCount} rondas`;
 
     await postToDiscord(message);
 };
@@ -181,7 +189,7 @@ export const postChallengeToDiscord = async (settings: ChallengeSettingsForPost)
 export const postResultToDiscord = async (ranking: ChallengeHighscores) => {
     const roleId = process.env.DISCORD_ROLE_DAILY_ID; // solo números
     const ping = roleId ? `<@&${roleId}>` : "@Desafío Diario";
-    
+
     const leaderboard = ranking.highscores.items
         .map((entry: any, index: number) => {
             const position = `${index + 1}º`;
@@ -200,13 +208,11 @@ export const postResultToDiscord = async (ranking: ChallengeHighscores) => {
 
     // ⚠️ importante: sin indentación en el template literal
     const message =
-        `## 📊 Resultados del desafío — <t:${ranking.timestamp}:D>
+        `## 📊 Resultados del desafío — <t:${ranking.timestamp}:D>  ${ping}
 🔗 Enlace: ${challengeUrl(ranking.token)}
 📈 Puntuación media: ${average}
 🏆 Ranking:
 
-
-${ping}
 \`\`\`
 ${leaderboard}
 \`\`\``;

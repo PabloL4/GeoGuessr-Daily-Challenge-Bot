@@ -197,7 +197,7 @@ export function recordDay(params: {
         mode: params.challenge?.mode ?? existingDay?.mode,
         roundCount: params.challenge?.roundCount ?? existingDay?.roundCount,
         timeLimit: params.challenge?.timeLimit ?? existingDay?.timeLimit,
-        
+
         scores: { ...(existingDay?.scores ?? {}), ...(params.scores ?? {}) },
     };
 
@@ -494,5 +494,61 @@ export function getWeeklyBestDailyByRounds(
     }
     return best;
 }
+
+export type WeeklyBestDailyByMode = {
+    mode: "move" | "nm" | "nmpz";
+    geoId: string;
+    score: number;
+    dayIndex: number;
+    date: string;
+    roundCount: number;
+};
+
+export function getWeeklyBestDailyByRoundsAndMode(
+    weekStartKey: string,
+    targetRounds: number,
+    targetMode: "move" | "nm" | "nmpz"
+): WeeklyBestDailyByMode | null {
+    const store = readStore();
+    const week = store.weeks[weekStartKey];
+    if (!week) return null;
+
+    const monday = new Date(weekStartKey);
+    monday.setHours(0, 0, 0, 0);
+
+    const dates: string[] = [];
+    for (let i = 0; i < 7; i++) {
+        const d = new Date(monday);
+        d.setDate(d.getDate() + i);
+        dates.push(toYmd(d));
+    }
+
+    let best: WeeklyBestDailyByMode | null = null;
+
+    for (const date of dates) {
+        const day = week.days[date];
+        if (!day) continue;
+
+        const roundCount = day.roundCount;
+        if (!Number.isFinite(roundCount) || roundCount !== targetRounds) continue;
+
+        // ✅ filtra por modo del día
+        if (day.mode !== targetMode) continue;
+
+        const dayIndex = day.dayIndex ?? getDayIndexFor(new Date(date));
+
+        for (const [geoId, score] of Object.entries(day.scores ?? {})) {
+            const s = Number(score);
+            if (!Number.isFinite(s)) continue;
+
+            if (!best || s > best.score) {
+                best = { mode: targetMode, geoId, score: s, dayIndex, date, roundCount };
+            }
+        }
+    }
+
+    return best;
+}
+
 
 

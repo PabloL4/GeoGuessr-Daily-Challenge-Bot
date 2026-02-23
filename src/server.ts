@@ -31,7 +31,21 @@ const toStoreMode = (mode: string): "move" | "nm" | "nmpz" => {
 
 const challenge = async () => {
     const challengePayload = await defaultChallenge(); // { map, mode }
+
+    console.log("[challenge] payload decided =", {
+        map: challengePayload.map,
+        mode: challengePayload.mode,
+        timeLimit: (challengePayload as any).timeLimit,
+        roundCount: (challengePayload as any).roundCount,
+    });
     const ChallengeSettings = await createChallenge(challengePayload);
+
+    console.log("[challenge] createChallenge response =", {
+        token: ChallengeSettings?.token,
+        mode: (ChallengeSettings as any)?.mode,
+        timeLimit: (ChallengeSettings as any)?.timeLimit,
+        roundCount: (ChallengeSettings as any)?.roundCount,
+    });
 
     if (ChallengeSettings) {
         // ✅ NUEVO: guardar metadata del challenge en league.json (sin scores aún)
@@ -272,10 +286,13 @@ if (mode === '--standalone') {
     });
 
     // Semanal: resumen (domingo 18:05)
-    cron.schedule('57 17 * * 0', async () => {
-        //console.log("Weekly summary cron running...");
-        await maybePostWeeklySummary();
-    });
+    cron.schedule(
+        "57 17 * * 1",
+        async () => {
+            await maybePostWeeklySummary();
+        },
+        { timezone: "Europe/Madrid" }
+    );
 
     //TEST
     // cron.schedule('* * * * *', async () => {
@@ -284,7 +301,7 @@ if (mode === '--standalone') {
 
 
     // 📅 Resumen mensual — día 1 a las 18:15 (mes anterior)
-    cron.schedule('15 18 1 * *', async () => {
+    cron.schedule('59 17 1 * *', async () => {
         const now = new Date();
         const year = now.getMonth() === 0 ? now.getFullYear() - 1 : now.getFullYear();
         const month = now.getMonth() === 0 ? 12 : now.getMonth(); // 1–12

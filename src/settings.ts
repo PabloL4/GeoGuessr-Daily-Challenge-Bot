@@ -1,6 +1,10 @@
-import fs from "fs/promises";
+import { readFile } from "node:fs/promises";
+import fsSync from "node:fs";
 import path from "path";
 import { ChallengePayload, ChallengeSettings, GameMode } from "./types.js";
+import { mondayOf, toYmd } from "./league/weeklyStore.js"; // ajusta ruta si hace falta
+
+const STORE_PATH = path.join(process.cwd(), "data", "league.json");
 
 function getWeekdayUTC(): number {
     // 0 = domingo, 1 = lunes, ..., 6 = sábado
@@ -16,40 +20,24 @@ const FAST_ROUND_DAY = 1; // 1 = lunes (por ejemplo)
 
 export function createChallengePayload(settings: ChallengeSettings): ChallengePayload {
     const { map, mode } = settings;
-    const weekday = getWeekdayUTC();
 
-    /* =========
-       ROUNDS
-       ========= */
-    const roundCount = weekday === TEN_ROUNDS_DAY ? 10 : 5;
-    
-    /* =========
-       TIME LIMIT
-       ========= */
-    let timeLimit: number;
+    // ✅ Usa lo que ya decidió defaultChallenge()
+    const roundCount = settings.roundCount ?? 5;
+    const timeLimit = settings.timeLimit ?? 60;
 
-    if (mode === "Move") {
-        // Move: tiempos cómodos y "bonitos"
-        timeLimit = randomFrom([60, 75, 90, 105, 120]);
-
-    } else if (weekday === FAST_ROUND_DAY) {
-        // NM / NMPZ: día ultra-rápido
-        timeLimit = 10;
-
-    } else {
-        // NM / NMPZ: resto de días
-        timeLimit = randomFrom([20, 30, 60]);
-    }
+    // (Opcional) Asegurar múltiplos de 10 si GeoGuessr lo requiere
+    const snappedTimeLimit = Math.round(timeLimit / 10) * 10;
 
     return {
         map,
         forbidMoving: mode === "NM" || mode === "NMPZ",
         forbidRotating: mode === "NMPZ",
         forbidZooming: mode === "NMPZ",
-        timeLimit,
+        timeLimit: snappedTimeLimit,
         roundCount,
     };
 }
+
 
 
 type AllowedModeLower = "move" | "nm" | "nmpz";
@@ -143,7 +131,7 @@ function daysBetween(a: string, b: string): number {
 
 async function readRecentPicks(limitDays = 60): Promise<RecentPick[]> {
     try {
-        const raw = await fs.readFile(LEAGUE_PATH, "utf8");
+        const raw = await readFile(LEAGUE_PATH, "utf8");
         const store = JSON.parse(raw) as LeagueStore;
 
         const days: any[] = [];
@@ -180,9 +168,24 @@ function filterByCooldown(
     });
 }
 
+function countMovesThisWeek(today = new Date()): number {
+    if (!fsSync.existsSync(STORE_PATH)) return 0;
+    const raw = fsSync.readFileSync(STORE_PATH, "utf8");
+    const store = JSON.parse(raw) as any;
+
+    const weekKey = toYmd(mondayOf(today));
+    const week = store.weeks?.[weekKey];
+    if (!week?.days) return 0;
+
+    return Object.values<any>(week.days).filter((d) => {
+        const m = String(d?.mode ?? "").toLowerCase();
+        return m === "move";
+    }).length;
+}
+
 
 export async function defaultChallenge(): Promise<ChallengeSettings> {
-    const raw = await fs.readFile(MAPS_PATH, "utf8");
+    const raw = await readFile(MAPS_PATH, "utf8");
     const parsed = JSON.parse(raw) as MapsFile;
 
     if (!parsed.maps?.length) throw new Error("data/maps.json has no maps");
@@ -197,7 +200,16 @@ export async function defaultChallenge(): Promise<ChallengeSettings> {
     const chosen = weightedPick(pool, (m) => m.weight ?? 1);
 
     const map = urlToMapId(chosen.url);
-    const modeLower = pickMode(chosen, lastMode, recent);
+    let modeLower = pickMode(chosen, lastMode, recent);
+
+    // ✅ Regla: máximo 1 MOVE por semana
+    const movesSoFar = countMovesThisWeek(new Date());
+    if (movesSoFar >= 1 && modeLower === "move") {
+        // fuerza a elegir NM/NMPZ si el mapa lo permite
+        const allowed = chosen.modes?.allowed ?? ["move", "nm", "nmpz"];
+        const nonMove = allowed.filter((m: string) => m !== "move");
+        modeLower = (nonMove.includes("nmpz") ? "nmpz" : nonMove[0] ?? "nm") as any;
+    }
     const mode = toGameMode(modeLower);
 
     // ✅ NEW: rounds + timeLimit rules
@@ -206,7 +218,7 @@ export async function defaultChallenge(): Promise<ChallengeSettings> {
 
     let timeLimit: number;
     if (mode === "Move") {
-        timeLimit = randomFrom([60, 75, 90, 105, 120]);
+        timeLimit = randomFrom([60, 90, 120, 180]);
     } else if (weekday === FAST_ROUND_DAY) {
         timeLimit = 10;
     } else {

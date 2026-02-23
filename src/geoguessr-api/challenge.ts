@@ -16,11 +16,17 @@ export const createChallenge = async (settings: ChallengeSettings): Promise<Chal
         const cookie = await loginAndGetCookie();
         const payload = createChallengePayload(settings);
         const options = createRequestOptions('POST', cookie, payload);
+        console.log("[challenge] request body =", JSON.stringify(payload, null, 2));
+
         const response = await fetch(challengeApiUrl, options as any);
         if (!response.ok) {
             throw new Error(response.statusText);
         }
         const data = await response.json() as ChallengeResponse;
+        console.log("[challenge] response json =", {
+            // deja esto amplio la primera vez
+            json: data,
+        });
         console.log('Challenge created:', data.token);
 
         const jsonData = JSON.stringify({
@@ -50,7 +56,7 @@ export const createChallenge = async (settings: ChallengeSettings): Promise<Chal
         }
 
         await fs.writeFile(tokenFilePath, jsonData, 'utf8');
-        
+
         return {
             name: mapName,
             mode: settings.mode,

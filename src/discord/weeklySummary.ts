@@ -2,7 +2,7 @@ import { postToDiscord } from "./discordPoster.js";
 import { buildWeeklyTable, getWeeklyPodium, getWeeklyPerfectAttendance } from "../league/weeklyStore.js";
 import { displayNameForGeoId } from "./mention.js";
 import { renderTableImage } from "./renderTableImage.js";
-import { getWeeklyBestDailyByRounds } from "../league/weeklyStore.js";
+import { getWeeklyBestDailyByRounds, getWeeklyBestDailyByRoundsAndMode } from "../league/weeklyStore.js";
 
 
 /**
@@ -19,19 +19,34 @@ export async function postWeeklySummaryToDiscord(weekStartKey: string): Promise<
 
     const { title, table } = buildWeeklyTable(weekStartKey);
 
-    const best5 = getWeeklyBestDailyByRounds(weekStartKey, 5);
+    const best5Move = getWeeklyBestDailyByRoundsAndMode(weekStartKey, 5, "move");
+    const best5Nm = getWeeklyBestDailyByRoundsAndMode(weekStartKey, 5, "nm");
+    const best5Nmpz = getWeeklyBestDailyByRoundsAndMode(weekStartKey, 5, "nmpz");
+
     const best10 = getWeeklyBestDailyByRounds(weekStartKey, 10);
 
     const fmtPts = (n: number) => n.toLocaleString("es-ES");
 
     const extraAwardsLines: string[] = [];
 
-    if (best5) {
+    // ✅ Top 5 rounds por modo
+
+    if (best5Nmpz) {
         extraAwardsLines.push(
-            `· ${displayNameForGeoId(best5.geoId)} por obtener el puntaje más alto en las partidas de 5️⃣ rondas, con **${fmtPts(best5.score)}** en el desafío **#${best5.dayIndex}**.`
+            `· ${displayNameForGeoId(best5Nmpz.geoId)} por la mejor puntuación en **NMPZ (5️⃣ rondas)**: **${fmtPts(best5Nmpz.score)}** en el desafío **#${best5Nmpz.dayIndex}**.`
+        );
+    }
+    if (best5Nm) {
+        extraAwardsLines.push(
+            `· ${displayNameForGeoId(best5Nm.geoId)} por la mejor puntuación en **NM (5️⃣ rondas)**: **${fmtPts(best5Nm.score)}** en el desafío **#${best5Nm.dayIndex}**.`
         );
     }
 
+    if (best5Move) {
+        extraAwardsLines.push(
+            `· ${displayNameForGeoId(best5Move.geoId)} por la mejor puntuación en **Move (5️⃣ rondas)**: **${fmtPts(best5Move.score)}** en el desafío **#${best5Move.dayIndex}**.`
+        );
+    }
     if (best10) {
         extraAwardsLines.push(
             `· ${displayNameForGeoId(best10.geoId)} por obtener el puntaje más alto en las partidas de 🔟 rondas, con **${fmtPts(best10.score)}** en el desafío **#${best10.dayIndex}**.`
