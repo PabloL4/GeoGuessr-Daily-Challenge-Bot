@@ -25,7 +25,7 @@ export const getHighscores = async (): Promise<ChallengeHighscores | undefined> 
             .then(data => JSON.parse(data) as ChallengeToken);
 
         // play game automatically if not played yet
-        const GameToken = await playGame(tokenData);
+        //const GameToken = await playGame(tokenData); //ToDo: I disabled this, let's see if there are some side effects...
 
         const options = createRequestOptions('GET', cookie);
         const response = await fetch(highscoresUrl(tokenData.token), options as any);

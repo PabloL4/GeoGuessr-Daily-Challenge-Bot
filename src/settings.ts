@@ -37,8 +37,6 @@ export function createChallengePayload(settings: ChallengeSettings): ChallengePa
     };
 }
 
-
-
 type AllowedModeLower = "move" | "nm" | "nmpz";
 
 type MapConfig = {
