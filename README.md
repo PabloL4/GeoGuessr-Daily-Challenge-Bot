@@ -143,18 +143,51 @@ npm start
 
 ## 🔐 Environment Variables
 
-Create a `.env` file (or modify the .env_example):
+Create a `.env` file in the root of the project (or modify `.env.example`).
+
+⚠️ IMPORTANT  
+Do NOT use `#` inside any token or password — it will be treated as a comment and break parsing.
 
 ```env
-DISCORD_TOKEN=your_bot_token
-DISCORD_CHANNEL_ID=target_channel_id
-DISCORD_GUILD_ID=server_id
-DISCORD_ROLE_DAILY_ID=role_id_for_mentions
+# --------------------------------------
+# GeoGuessr Authentication (Challenge Creation)
+# --------------------------------------
+GEOGUESSR_EMAIL=your_email
+GEOGUESSR_PASSWORD=your_password
 
-LEAGUE_START_DATE=2024-01-01
+# --------------------------------------
+# Discord Configuration
+# --------------------------------------
+DISCORD_TOKEN=your_discord_bot_token
+DISCORD_CHANNEL_ID=channel_id_for_posts
+
+# Required for slash commands (/link, /unlink)
+DISCORD_GUILD_ID=your_server_id
+
+# Admin(s) allowed to use /unlink
+MY_DISCORD_ID=123456789012345678
+
+# Optional role mention for daily challenge posts
+DISCORD_ROLE_DAILY_ID=098765432101234564321
+
+# --------------------------------------
+# Custom Message Endpoint
+# --------------------------------------
+# Token required to use the /say endpoint
+ADMIN_TOKEN=abcdef1234567890abcdef1234567890
+
+# --------------------------------------
+# Bot Language
+# --------------------------------------
+# Available: en, es, fr, de, it, pt
+BOT_LANG=en
+
+# --------------------------------------
+# League Configuration
+# --------------------------------------
+LEAGUE_START_DATE=2026-01-12
 WEEK_INDEX_START=1
 DAY_INDEX_START=1
-WEEKLY_TOP_N=20
 ```
 
 ---
