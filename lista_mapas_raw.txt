@@ -15,3 +15,9 @@ Town Squares of the World; https://www.geoguessr.com/maps/5ffb6664ce04930001f852
 A tweaked World; https://www.geoguessr.com/maps/64205c50e014cf9bb1a04e01, good for move
 An Official world;https://www.geoguessr.com/maps/652ba0d9002aa0d36f996153 good for move
 AI Generated World; https://www.geoguessr.com/maps/5dbaf08ed0d2a478444d2e8e good nm and nmpz
+A Balanced Spain; https://www.geoguessr.com/maps/62f439cfe46df79befe5c5f8; good nm and nmpz
+IntersectionGuessr - Spain, https://www.geoguessr.com/maps/60b3d59f7398830001d2f105, No for move
+Dirty World, https://www.geoguessr.com/maps/63f3ff1e0355e40ded075e0c, not for Move
+Spain: Cities and Towns Population 10k+, https://www.geoguessr.com/maps/5ad36da730e0107eb8b4c8bd
+
+ 

@@ -7,8 +7,9 @@ export type GameMode = 'Move' | 'NM' | 'NMPZ';
 export interface ChallengeSettings {
     map: string;
     mode: GameMode;
-};
-
+    timeLimit: number;
+    rounds: number;
+}
 export interface ChallengePayload {
     map: string;
     forbidMoving: boolean;
@@ -23,10 +24,13 @@ export interface ChallengeSettingsForPost {
     mode: GameMode;
     token: string;
 
-    // NEW: info extra del mapa (para guardar en league.json)
-    mapId?: string;   // el "id" de tu maps.json (ej: "community_world")
-    mapUrl?: string;  // la URL completa del mapa
-};
+    // NEW
+    timeLimit?: number;
+    rounds?: number;
+
+    mapId?: string;
+    mapUrl?: string;
+}
 
 
 export interface ChallengeResponse {

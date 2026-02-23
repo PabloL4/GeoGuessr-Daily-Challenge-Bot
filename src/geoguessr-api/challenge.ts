@@ -50,12 +50,15 @@ export const createChallenge = async (settings: ChallengeSettings): Promise<Chal
         }
 
         await fs.writeFile(tokenFilePath, jsonData, 'utf8');
+        
         return {
             name: mapName,
             mode: settings.mode,
             token: data.token,
             mapId,
-            mapUrl
+            mapUrl,
+            timeLimit: settings.timeLimit,
+            rounds: settings.rounds,
         }
     } catch (error) {
         console.error('Error creating challenge:', error);

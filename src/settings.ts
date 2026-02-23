@@ -2,17 +2,55 @@ import fs from "fs/promises";
 import path from "path";
 import { ChallengePayload, ChallengeSettings, GameMode } from "./types.js";
 
+function getWeekdayUTC(): number {
+    // 0 = domingo, 1 = lunes, ..., 6 = sábado
+    return new Date().getUTCDay();
+}
+
+function randomFrom<T>(arr: T[]): T {
+    return arr[Math.floor(Math.random() * arr.length)];
+}
+
+const TEN_ROUNDS_DAY = 3; // 3 = miércoles
+const FAST_ROUND_DAY = 1; // 1 = lunes (por ejemplo)
+
 export function createChallengePayload(settings: ChallengeSettings): ChallengePayload {
     const { map, mode } = settings;
+    const weekday = getWeekdayUTC();
+
+    /* =========
+       ROUNDS
+       ========= */
+    const rounds = weekday === TEN_ROUNDS_DAY ? 10 : 5;
+
+    /* =========
+       TIME LIMIT
+       ========= */
+    let timeLimit: number;
+
+    if (mode === "Move") {
+        // Move: tiempos cómodos y "bonitos"
+        timeLimit = randomFrom([60, 75, 90, 105, 120]);
+
+    } else if (weekday === FAST_ROUND_DAY) {
+        // NM / NMPZ: día ultra-rápido
+        timeLimit = 10;
+
+    } else {
+        // NM / NMPZ: resto de días
+        timeLimit = randomFrom([20, 30, 60]);
+    }
+
     return {
         map,
         forbidMoving: mode === "NM" || mode === "NMPZ",
         forbidRotating: mode === "NMPZ",
         forbidZooming: mode === "NMPZ",
-        timeLimit: 60,
-        rounds: 5,
+        timeLimit,
+        rounds,
     };
 }
+
 
 type AllowedModeLower = "move" | "nm" | "nmpz";
 
@@ -149,21 +187,33 @@ export async function defaultChallenge(): Promise<ChallengeSettings> {
 
     if (!parsed.maps?.length) throw new Error("data/maps.json has no maps");
 
-    // ✅ NUEVO: histórico + cooldown
     const todayYmd = new Date().toISOString().slice(0, 10);
     const recent = await readRecentPicks(60);
     const lastMode = recent[0]?.mode;
 
     const candidates = filterByCooldown(parsed.maps, todayYmd, recent);
-    const pool = candidates.length ? candidates : parsed.maps; // fallback si todo está en cooldown
+    const pool = candidates.length ? candidates : parsed.maps;
 
     const chosen = weightedPick(pool, (m) => m.weight ?? 1);
 
     const map = urlToMapId(chosen.url);
     const modeLower = pickMode(chosen, lastMode, recent);
-
     const mode = toGameMode(modeLower);
 
-    return { map, mode };
+    // ✅ NEW: rounds + timeLimit rules
+    const weekday = getWeekdayUTC();
+    const rounds = weekday === TEN_ROUNDS_DAY ? 10 : 5;
+
+    let timeLimit: number;
+    if (mode === "Move") {
+        timeLimit = randomFrom([60, 75, 90, 105, 120]);
+    } else if (weekday === FAST_ROUND_DAY) {
+        timeLimit = 10;
+    } else {
+        timeLimit = randomFrom([20, 30, 60]);
+    }
+
+    return { map, mode, timeLimit, rounds };
 }
+
 

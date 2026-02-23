@@ -5,11 +5,10 @@ import { postChallengeToDiscord, postResultToDiscord } from './discord/index.js'
 import { createChallenge, getHighscores } from './geoguessr-api/index.js';
 import { defaultChallenge } from './settings.js';
 import { postWeeklySummaryToDiscord } from "./discord/index.js";
-import { buildWeeklyTable } from "./league/weeklyStore.js";
 import { getPreviousWeekKeyIfMonday, markWeekAsPosted, clearWeek } from "./league/weeklyStore.js";
 import { recordDay } from "./league/weeklyStore.js";
-import { postYearlySummaryToDiscord } from "./yearlySummary.js";
-
+import { postYearlySummary } from "./yearlySummary.js";
+import { buildChallengeIntro } from "./discord/challengeMessage.js";
 
 
 dotenv.config();
@@ -45,13 +44,6 @@ const challenge = async () => {
     }
 };
 
-
-// const highscores = async () => {
-//     const highscores = await getHighscores();
-//     if (highscores) {
-//         await postResultToDiscord(highscores);
-//     }
-// };
 const highscores = async () => {
     const hs = await getHighscores();
     if (!hs) return;
@@ -136,23 +128,18 @@ app.get("/weekly", async (req, res) => {
     }
 });
 
+
 app.get("/yearly", async (req, res) => {
-    try {
-        const yearStr = String(req.query.year ?? "");
-        const year = Number(yearStr);
-
-        if (!Number.isInteger(year) || year < 2000 || year > 2100) {
-            res.status(400).send("Missing/invalid year. Example: /yearly?year=2026");
-            return;
-        }
-
-        await postYearlySummaryToDiscord(year);
-        res.send(`OK yearly summary posted for ${year}`);
-    } catch (err: any) {
-        console.error(err);
-        res.status(500).send(err?.message ?? "Error");
+    const year = Number(req.query.year);
+    if (!year) {
+        res.status(400).send("Missing ?year=YYYY");
+        return;
     }
+
+    await postYearlySummary(year);
+    res.send(`Yearly summary for ${year} posted.`);
 });
+
 
 
 const mode = process.argv[2];
@@ -177,7 +164,7 @@ if (mode === '--standalone') {
 
     // Anual: resumen (1 de enero a las 00:10)          
     cron.schedule('10 0 1 1 *', async () => {
-    await postYearlySummaryToDiscord(new Date().getFullYear() - 1);
+    await postYearlySummary(new Date().getFullYear() - 1);
 });
 
 } else {

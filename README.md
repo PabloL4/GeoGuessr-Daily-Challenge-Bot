@@ -1,140 +1,228 @@
-# GeoGuessr Daily Challenge Poster
+Current commands:
 
-(Japanese version is available [here](README_ja.md))
+npm start
+npm run linkbot
 
-This project is a Node.js application that logs into GeoGuessr, creates a daily challenge, and posts the challenge details to a specified Discord channel. The project uses TypeScript for development and `discord.js` for interacting with the Discord API.
+curl.exe  "http://localhost:25000/challenge"
+Invoke-WebRequest "http://localhost:25000/highscores" -UseBasicParsing 
+curl.exe "http://localhost:25000/weekly?weekStart=2026-01-19"     
 
-## Prerequisites
+# GeoGuessr Daily Challenge Bot + League (Discord)
 
-- Node.js
+An advanced fork of **daily-geoguessr-bot** that creates a daily GeoGuessr challenge, posts it to Discord, collects highscores, and maintains a weekly league — all without a database.
+
+This version adds:
+- a modern map selector with cooldowns and weights
+- weekly and yearly summaries
+- variable rounds and time limits
+- playful daily challenge messages
+- a persistent Discord bot for securely linking GeoGuessr ↔ Discord users via slash commands
+
+---
+
+## Features
+
+### Daily GeoGuessr Challenge
+- Automatically creates a daily challenge on GeoGuessr.
+- Posts the challenge to Discord with:
+  - challenge link
+  - map name
+  - game mode (Move / NM / NMPZ)
+  - number of rounds
+  - time per round
+  - a fun, dynamic intro message (⚡, 😌, 🔟, etc.)
+
+### Smart Map Selection (`data/maps.json`)
+- Weighted random selection (`weight`)
+- Optional cooldown per map (`cooldownDays`)
+- Allowed modes per map (`move`, `nm`, `nmpz`)
+- Recommended modes per map
+- Avoids repeating the same mode as the previous day when possible
+- Limits **Move** challenges to **max 1 per last 7 days** (unless unavoidable)
+
+### Rounds & Time Rules
+- **One fixed weekday** (e.g. Wednesday): **10 rounds**
+- **One fixed weekday** (e.g. Monday):  
+  - if NOT Move → **10 seconds per round**
+- **NM / NMPZ on other days**: **20 / 30 / 60 seconds**
+- **Move challenges**: random “clean” values between **60–120s**
+  (60, 75, 90, 105, 120)
+
+### Weekly League (JSON, no database)
+- Stored in `data/league.json`
+- Tracks:
+  - daily challenges
+  - scores per GeoGuessr userId
+  - map metadata and mode
+- Weekly summary:
+  - podium (🥇🥈🥉)
+  - perfect attendance (7/7)
+  - ASCII leaderboard table
+- Yearly summary supported (when you decide to enable it)
+
+### GeoGuessr ↔ Discord Linking
+A **persistent Discord bot** (separate process) with slash commands:
+
+- `/link geoid:<GeoGuessrUserId>`
+- `/unlink geoid:<...>` or `/unlink discord:<@user>` (admin only)
+
+Notes:
+- Uses **IDs**, not nicknames (safe if names change)
+- Replies are **ephemeral** (private)
+- Works even in read-only channels
+
+---
+
+## Requirements
+- Node.js (ESM + TypeScript)
 - npm
-- A Discord bot token and a Discord channel ID
-- A GeoGuessr account
+- GeoGuessr account
+- Discord bot + server
+
+---
 
 ## Setup
 
-1. Clone the repository:
-    ```bash
-    git clone https://github.com/sh-mug/daily-geoguessr-bot.git
-    cd daily-geoguessr-bot
-    ```
-
-2. Install the dependencies:
-    ```bash
-    npm install
-    ```
-
-3. Please copy `.env.example` to the root directory of the project to create a `.env` file and set the following environment variables.:
-    ```plaintext
-    GEOGUESSR_EMAIL=your-geoguessr-email@gmail.com
-    GEOGUESSR_PASSWORD=your-geoguessr-password
-    DISCORD_TOKEN=your-discord-bot-token
-    DISCORD_CHANNEL_ID=your-discord-channel-id
-    ```
-
-4. Compile the TypeScript code:
-    ```bash
-    npx tsc
-    ```
-
-## Usage
-
-
-### Standalone Mode
-
-In standalone mode, scheduled tasks are automatically executed without any settings. To run in standalone mode, execute the following:
-
+### 1) Install dependencies
 ```bash
-npm run standalone
-```
+npm install
 
-In this mode, the following schedules are used:
-- `challenge` runs every day at midnight (00:00) and creates a new GeoGuessr challenge.
-- `highscores` runs every day at 11 PM (23:00) and posts the highscores of the previous day's challenge to Discord.
 
-### Server Mode
+Build:
+npm run build
 
-In server mode, you can access the endpoints exposed by the Express server to manually execute tasks. To run in server mode, execute the following:
 
-```bash
+data/maps.json
+{
+  "maps": [
+    {
+      "id": "community_world",
+      "name": "A Community World",
+      "url": "https://www.geoguessr.com/maps/62a44b22040f04bd36e8a914",
+      "modes": {
+        "allowed": ["move", "nm", "nmpz"]
+      },
+      "weight": 3,
+      "tags": ["world", "community"]
+    },
+    {
+      "id": "arbitrary_world",
+      "name": "An Arbitrary World",
+      "url": "https://www.geoguessr.com/maps/6089bfcff6a0770001f645dd",
+      "modes": {
+        "allowed": ["move", "nm", "nmpz"],
+        "recommended": ["nmpz"]
+      },
+      "weight": 2,
+      "cooldownDays": 7,
+      "tags": ["world", "varied"]
+    }
+  ]
+}
+
+
+
+Running the Project
+
+Server mode (manual endpoints)
+
 npm start
-```
 
-In this mode, the following endpoints are available:
-- `GET /challenge` - Triggers `challenge`.
-curl.exe  "http://localhost:25000/challenge"
-- `GET /highscores` - Triggers `highscores`.
-curl.exe  "http://localhost:25000/highscores"
 
- curl.exe -i "http://localhost:25000/weekly?weekStart=2026-01-12" 
+Typical endpoints:
 
-#### Crontab Configuration
+GET /challenge
 
-If you prefer to use `crontab` to schedule tasks instead of running the application in standalone mode, you can set up `crontab` entries as follows:
+GET /highscores
 
-1. Open the crontab editor:
+GET /weekly?weekStart=YYYY-MM-DD
 
-    ```bash
-    crontab -e
-    ```
+yearly summary endpoint
+curl.exe "http://localhost:25000/yearly?year=2026"
 
-2. Add the following entries to schedule `challenge` and `highscores`:
+Windows example:
+curl.exe "http://localhost:25000/challenge"
 
-    ```crontab
-    0 0 * * * curl http://localhost:25000/challenge
-    0 23 * * * curl http://localhost:25000/highscores
-    ```
 
-## Challenge Settings
+Standalone mode (internal cron)
 
-The challenge settings randomly select maps from `config.json`. By default, the maps are:
+If enabled in your fork, the main process can:
 
-* [A Balanced Japan](https://www.geoguessr.com/maps/631a309ba54a618fca31960a)
-* [An Arbitrary Japan](https://www.geoguessr.com/maps/63e5ecc3ca384c72d0bd9bc4)
-* [Japan Urban Areas](https://www.geoguessr.com/maps/5ee8e6a803f80c500c7d49b0)
-* [Japan • 日本 60k+](https://www.geoguessr.com/maps/59cf49695d2de4db80351e6e)
+create daily challenges
 
-The game mode changes based on the day of the week:
+fetch highscores
 
-- **Monday, Wednesday, Friday**: The game mode is set to `Move`.
-- **Tuesday, Thursday, Saturday**: The game mode is set to `NM` (No Moving).
-- **Sunday**: The game mode is set to `NMPZ` (No Moving, Panning, or Zooming).
+post weekly summaries
 
-This functionality is implemented to provide varied gameplay experiences depending on the day.
+Recommended for production:
 
-## Project Structure
+define explicit cron schedules (daily / weekly)
 
-- `src/`
-  - `geoguessr-api/`
-    - `login.ts` - Handles logging into GeoGuessr and managing cookies.
-    - `challenge.ts` - Handles creating a new GeoGuessr challenge.
-    - `highscores.ts` - Handles fetching the highscores of a GeoGuessr challenge.
-  - `discord/`
-    - `discordPoster.ts` - Handles posting messages to Discord.
-  - `server.ts` - The entry point of the application.
+Discord link bot (required)
 
-## Environment Variables
+Must run continuously to handle slash commands:
 
-- `GEOGUESSR_EMAIL`: Your GeoGuessr account email.
-- `GEOGUESSR_PASSWORD`: Your GeoGuessr account password.
-- `DISCORD_TOKEN`: Your Discord bot token.
-- `DISCORD_CHANNEL_ID`: The ID of the Discord channel where the message will be posted.
+npm run linkbot
 
-## Important Notes
 
-- Ensure that your bot has the necessary permissions to post messages in the specified Discord channel.
-- Be cautious with your credentials and avoid committing the `.env` file to version control.
-- Save the GeoGuessr cookie to `cookie.txt` during the initial login. The cookie is valid for one year. When it expires, manually delete `cookie.txt`.
-- If the challenge is not played when the results are retrieved, it will be automatically played. This is based on the GeoGuessr API specifications.
+Commands:
 
-## License
+/link geoid:<GeoGuessrUserId>
 
-This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
+/unlink geoid:<...> (admin)
 
-## Contributing
+/unlink discord:<@user> (admin)
 
-Contributions are welcome! Please open an issue or submit a pull request for any improvements or bug fixes.
 
-## Contact
+Discord Permissions
 
-For any questions or support, please open an issue in the GitHub repository.
+Channel can be read-only
+
+Must allow:
+
+Use Application Commands
+
+/unlink can be restricted:
+
+via code (admin ID check)
+
+or via Discord → Integrations → Commands
+
+Notes
+
+GeoGuessr cookies/sessions may expire; re-login if needed.
+
+No database required — league.json is the source of truth.
+
+Designed to be easy to extend (more stats, awards, messages).
+
+
+Scripts
+
+npm start — server mode
+
+npm run linkbot — persistent slash-command bot
+
+npm run build — compile TypeScript
+
+Project Structure (overview)
+
+src/settings.ts — map/mode selection, rounds & time rules
+
+src/challenge.ts — GeoGuessr challenge creation
+
+src/server.ts — Express server / standalone cron
+
+src/league/weeklyStore.ts — league persistence & logic
+
+src/discord/discordPoster.ts — Discord posting
+
+src/discord/linkBot.ts — /link & /unlink
+
+src/linkBotMain.ts — link bot entrypoint
+
+
+
+License
+
+MIT

@@ -144,8 +144,7 @@
             "modes": {
                 "allowed": [
                     "move",
-                    "nm",
-                    "nmpz"
+                    "nm"
                 ]
             },
             "weight": 1,
@@ -200,8 +199,7 @@
             "modes": {
                 "allowed": [
                     "move",
-                    "nm",
-                    "nmpz"
+                    "nm"
                 ]
             },
             "weight": 2,
@@ -237,8 +235,7 @@
             "modes": {
                 "allowed": [
                     "move",
-                    "nm",
-                    "nmpz"
+                    "nm"
                 ]
             },
             "weight": 2,
@@ -255,8 +252,7 @@
             "modes": {
                 "allowed": [
                     "move",
-                    "nm",
-                    "nmpz"
+                    "nm"
                 ]
             },
             "weight": 2,
@@ -321,6 +317,83 @@
                 "world",
                 "ai-generated",
                 "hard"
+            ]
+        },
+        {
+            "id": "balanced_spain",
+            "name": "A Balanced Spain",
+            "url": "https://www.geoguessr.com/maps/62f439cfe46df79befe5c5f8",
+            "modes": {
+                "allowed": [
+                    "nm",
+                    "nmpz"
+                ],
+                "recommended": [
+                    "nm",
+                    "nmpz"
+                ]
+            },
+            "weight": 2,
+            "cooldownDays": 14,
+            "tags": [
+                "spain",
+                "balanced",
+                "medium"
+            ]
+        },
+        {
+            "id": "intersectionguessr_spain",
+            "name": "IntersectionGuessr - Spain",
+            "url": "https://www.geoguessr.com/maps/60b3d59f7398830001d2f105",
+            "modes": {
+                "allowed": [
+                    "nm",
+                    "move"
+                ]
+            },
+            "weight": 1,
+            "cooldownDays": 14,
+            "tags": [
+                "spain",
+                "intersections",
+                "hard"
+            ]
+        },
+        {
+            "id": "dirty_world",
+            "name": "Dirty World",
+            "url": "https://www.geoguessr.com/maps/63f3ff1e0355e40ded075e0c",
+            "modes": {
+                "allowed": [
+                    "nm",
+                    "nmpz"
+                ]
+            },
+            "weight": 1,
+            "cooldownDays": 14,
+            "tags": [
+                "world",
+                "dirty",
+                "hard"
+            ]
+        },
+        {
+            "id": "spain_cities_10k",
+            "name": "Spain: Cities and Towns Population 10k+",
+            "url": "https://www.geoguessr.com/maps/5ad36da730e0107eb8b4c8bd",
+            "modes": {
+                "allowed": [
+                    "move",
+                    "nm"
+                    
+                ]
+            },
+            "weight": 2,
+            "cooldownDays": 14,
+            "tags": [
+                "spain",
+                "cities",
+                "urban"
             ]
         }
     ]

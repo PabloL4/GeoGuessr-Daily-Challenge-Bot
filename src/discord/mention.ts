@@ -2,6 +2,8 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 
+
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
@@ -49,4 +51,24 @@ export function displayNameForGeoId(geoId: string): string {
     const flag = flagEmoji(p.country);
 
     return flag ? `${flag} ${mentionOrNick}` : mentionOrNick;
+}
+
+
+// Para podio/constancia: SIN bandera, y con mención si existe
+export function podiumNameForGeoId(geoId: string): string {
+    const store = readStore();
+    const p = store.players[geoId];
+    if (!p) return geoId;
+
+    return p.discordId ? `<@${p.discordId}>` : p.nick;
+}
+
+// Para tablas (code block): CON bandera + nick, pero NUNCA mención (<@...>)
+export function tableNameForGeoId(geoId: string): string {
+    const store = readStore();
+    const p = store.players[geoId];
+    if (!p) return geoId;
+
+    const flag = flagEmoji(p.country);
+    return flag ? `${flag} ${p.nick}` : p.nick;
 }

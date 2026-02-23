@@ -1,59 +1,35 @@
-// src/league/yearlySummary.ts
-// Posts a yearly summary message to Discord.
-//
-// NOTE: You must adjust the two imports below to match your project paths:
-// - postToDiscord: your existing Discord posting helper
-// - displayNameForGeoId: your mention helper (adds flag + nick or mention depending on your logic)
-
-import { buildYearlyTable, getYearlyFullAttendance, getYearlyStats } from "./league/yearlyStore.js";
-
+import { getYearlyRanking } from "./league/yearlyStore.js";
 import { postToDiscord } from "./discord/discordPoster.js";
-import { displayNameForGeoId } from "./discord/mention.js";
+import { podiumNameForGeoId, tableNameForGeoId } from "./discord/mention.js";
 
-function fmtInt(n: number): string {
-    return Math.round(n).toLocaleString("es-ES");
-}
 
-export async function postYearlySummaryToDiscord(year: number): Promise<void> {
-    const { rows, totalDaysInYear, bestDay } = getYearlyStats(year);
 
-    const podium = rows.slice(0, 3);
-    const medals = ["🥇", "🥈", "🥉"];
+export async function postYearlySummary(year: number): Promise<void> {
+    const ranking = getYearlyRanking(year);
 
-    const podiumBlock = podium.length
-        ? `Ganadores del año:\n\n${podium
-            .map((p, i) => `${medals[i]} **${displayNameForGeoId(p.geoId)}**`)
-            .join("\n")}\n\n`
-        : "";
+    if (!ranking.length) {
+        await postToDiscord(`❌ No data available for year ${year}.`);
+        return;
+    }
 
-    // Constancia anual = jugó todos los días registrados en tu data de ese año
-    const fullAttendance = getYearlyFullAttendance(year);
-    const attendanceLine = fullAttendance.length
-        ? fullAttendance.map((geoId) => displayNameForGeoId(geoId)).join(", ")
-        : "(nadie todavía)";
+    const podium = ranking.slice(0, 3);
 
-    const bestDayLine = bestDay
-        ? `• Mejor día del año: **${displayNameForGeoId(bestDay.geoId)}** (${fmtInt(bestDay.score)} pts — ${bestDay.date})\n`
-        : "";
+    const podiumLines = podium.map(
+        (p, i) => `• ${podiumNameForGeoId(p.geoId)} ${["🥇", "🥈", "🥉"][i]}`
+    );
 
-    const statsLine =
-        totalDaysInYear > 0
-            ? `Datos: ${totalDaysInYear} días registrados en ${year}.\n\n`
-            : `Datos: aún no hay días registrados para ${year}.\n\n`;
-
-    const { title, table } = buildYearlyTable(year);
+    const tableLines = ranking.map((r, i) =>
+        `${String(i + 1).padStart(2, " ")}. ${tableNameForGeoId(r.geoId)} — ` +
+        `${r.total.toLocaleString()} puntos (${r.daysPlayed} días)`
+    );
 
     const message =
-        `## RESUMEN ANUAL ${title} @Desafío Diario\n\n` +
-        statsLine +
-        podiumBlock +
-        (bestDayLine ? `🏆 Premios especiales\n${bestDayLine}\n` : "") +
-        `🎯 Constancia (jugó todos los días registrados):\n${attendanceLine}\n\n` +
-        "```" +
-        "\n" +
-        table +
-        "\n" +
-        "```";
+        `## 🏆 Resumen anual ${year}\n\n` +
+        `**Podio:**\n${podiumLines.join("\n")}\n\n` +
+        `**Clasificación completa:**\n` +
+        "```text\n" +
+        tableLines.join("\n") +
+        "\n```";
 
     await postToDiscord(message);
 }
