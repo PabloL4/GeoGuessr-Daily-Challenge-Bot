@@ -9,6 +9,7 @@ import {
 const linkCommand = new SlashCommandBuilder()
     .setName("link")
     .setDescription("Vincula tu GeoGuessr userId con tu usuario de Discord")
+    .setDMPermission(true)
     .addStringOption((opt) =>
         opt
             .setName("geoid")
@@ -16,23 +17,29 @@ const linkCommand = new SlashCommandBuilder()
             .setRequired(true)
     );
 
-const ADMIN_DISCORD_IDS = new Set<string>([
-    "MY_DISCORD_ID",
-]);
+const ADMIN_DISCORD_IDS = new Set<string>(
+    (process.env.ADMIN_DISCORD_IDS ?? process.env.MY_DISCORD_ID ?? "")
+        .split(",")
+        .map((s) => s.trim())
+        .filter(Boolean)
+);
 
 async function registerCommands(discordToken: string, clientId: string, guildId: string) {
     const rest = new REST({ version: "10" }).setToken(discordToken);
 
-    await rest.put(Routes.applicationGuildCommands(clientId, guildId), {
-        body: [linkCommand.toJSON(), unlinkCommand.toJSON()],
-    });
+    await rest.put(
+    Routes.applicationCommands(clientId),
+    { body: [linkCommand.toJSON(), unlinkCommand.toJSON()] }
+    );
 
-    console.log("✅ Slash command /link registered");
+
+    console.log("✅ Slash commands /link and /unlink registered");
 }
 
 const unlinkCommand = new SlashCommandBuilder()
     .setName("unlink")
     .setDescription("Desvincula un GeoGuessr ID de un usuario de Discord (admin)")
+    .setDMPermission(true)
     .addStringOption((opt) =>
         opt
             .setName("geoid")
