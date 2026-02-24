@@ -9,6 +9,10 @@ A fully automated Discord bot for managing **daily GeoGuessr challenges**, track
 This project is based on (and heavily extended from) `daily-geoguessr-bot` (by sh-mug: https://github.com/sh-mug/daily-geoguessr-bot), rewritten in **Node.js + TypeScript (ESM)** with a focus on automation, data integrity, and long-term league tracking.
 
 ---
+
+![Weekly Table](docs/sample_week_summary.png)
+
+---
 ## 📋 Prerequisites
 
 Before installing the bot, make sure you have:
@@ -60,11 +64,7 @@ npm install
 npm run build
 npm start
 ```
-
-![Weekly Table](docs/sample_week_summary.png)
-
 ---
-
 ## ✨ Features
 
 ### 🗺️ Daily Challenges
