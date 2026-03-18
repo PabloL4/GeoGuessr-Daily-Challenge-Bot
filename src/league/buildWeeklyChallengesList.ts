@@ -38,6 +38,9 @@ export type WeeklyChallengeListItem = {
 const DATA_DIR = path.join(process.cwd(), "data");
 const STORE_PATH = path.join(DATA_DIR, "league.json");
 
+const roleId = process.env.DISCORD_ROLE_DAILY_ID; //only numbers
+const ping = roleId ? `<@&${roleId}>` : t("discord.ping.dailyChallenge");
+
 function readStore(): Store {
     if (!fs.existsSync(STORE_PATH)) return { weeks: {} };
     const parsed = JSON.parse(fs.readFileSync(STORE_PATH, "utf-8")) as Partial<Store>;
@@ -119,7 +122,7 @@ export function formatWeeklyChallengesList(referenceDate = new Date()): string {
     }
 
     const lines: string[] = [];
-    lines.push(t("weeklyChallenges.title"));
+    lines.push(`${t("weeklyChallenges.title")} ${ping}`);
     lines.push("");
 
     for (const item of items) {

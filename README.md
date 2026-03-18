@@ -334,6 +334,7 @@ curl "http://localhost:25000/monthly?year=2026&month=01"
 curl "http://localhost:25000/yearly?year=2026"
 curl "http://localhost:25000/backfill?date=2026-01-21"
 curl "http://localhost:25000/challenge/test?asDate=2026-02-02"
+curl "http://localhost:25000/weekly-challenges"
 ```
 
 ---
