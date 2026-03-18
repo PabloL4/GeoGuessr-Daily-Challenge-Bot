@@ -15,6 +15,7 @@ import { getHighscoresByToken } from "./geoguessr-api/highscores.js";
 import { resyncWeek } from "./league/resyncWeek.js";
 import { postToDiscord } from "./discord/discordPoster.js";
 import { setLang, resolveLang, t } from "./i18n/index.js";
+import { postWeeklyChallengesListToDiscord } from "./discord/index.js";
 
 dotenv.config();
 
@@ -134,6 +135,14 @@ const maybePostWeeklySummary = async (forcedWeekStart?: string) => {
         markWeekAsPosted(weekKey);
     } catch (err) {
         console.error("[weekly] failed to post summary for", weekKey, err);
+    }
+};
+
+const postWeeklyChallengesList = async () => {
+    try {
+        await postWeeklyChallengesListToDiscord(new Date());
+    } catch (err) {
+        console.error("[weekly-list] failed to post weekly challenges list", err);
     }
 };
 
@@ -351,6 +360,16 @@ app.get("/challenge/test", async (req, res) => {
     }
 });
 
+app.get("/weekly-challenges", async (_req, res) => {
+    try {
+        await postWeeklyChallengesListToDiscord(new Date());
+        res.send("Weekly challenges list posted.");
+    } catch (err) {
+        console.error("[/weekly-challenges] error:", err);
+        res.status(500).send("Failed to post weekly challenges list.");
+    }
+});
+
 const mode = process.argv[2];
 
 app.listen(port, () => {
@@ -380,6 +399,13 @@ if (mode === '--standalone') {
         },
         { timezone: "Europe/Madrid" }
     );
+    cron.schedule(
+    "0 12 * * 0",
+    async () => {
+        await postWeeklyChallengesList();
+    },
+    { timezone: "Europe/Madrid" }
+);
 
     //TEST
     // cron.schedule('* * * * *', async () => {

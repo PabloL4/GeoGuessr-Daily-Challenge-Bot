@@ -173,5 +173,18 @@
   "weeklyStore.errors.weekNotFound": "Week not found: {weekStartKey}",
   "weeklyStore.headers.name": "NAME",
   "weeklyStore.headers.total": "TOTAL",
-  "weeklyStore.title": "Week {weekIndex} ({weekStart})"
-}
+  "weeklyStore.title": "Week {weekIndex} ({weekStart})",
+
+  "weeklyChallenges.title": "📅 **Weekly Challenges Reminder**",
+  "weeklyChallenges.empty": "I couldn't find any saved challenges from Monday to Saturday for this week.",
+  "weeklyChallenges.day.monday": "Monday",
+  "weeklyChallenges.day.tuesday": "Tuesday",
+  "weeklyChallenges.day.wednesday": "Wednesday",
+  "weeklyChallenges.day.thursday": "Thursday",
+  "weeklyChallenges.day.friday": "Friday",
+  "weeklyChallenges.day.saturday": "Saturday",
+  "weeklyChallenges.mode.move": "Move",
+  "weeklyChallenges.mode.nm": "NM",
+  "weeklyChallenges.mode.nmpz": "NMPZ",
+  "weeklyChallenges.line": "({mapName} / {timeLimit}s / {roundCount}r / {mode})"
+  }

@@ -147,5 +147,17 @@
   "weeklyStore.errors.weekNotFound": "Semaine introuvable : {weekStartKey}",
   "weeklyStore.headers.name": "NOM",
   "weeklyStore.headers.total": "TOTAL",
-  "weeklyStore.title": "Semaine {weekIndex} ({weekStart})"
+  "weeklyStore.title": "Semaine {weekIndex} ({weekStart})",
+  "weeklyChallenges.title": "📅 **Rappel des défis de la semaine**",
+  "weeklyChallenges.empty": "Je ne trouve aucun défi enregistré du lundi au samedi pour cette semaine.",
+  "weeklyChallenges.day.monday": "Lundi",
+  "weeklyChallenges.day.tuesday": "Mardi",
+  "weeklyChallenges.day.wednesday": "Mercredi",
+  "weeklyChallenges.day.thursday": "Jeudi",
+  "weeklyChallenges.day.friday": "Vendredi",
+  "weeklyChallenges.day.saturday": "Samedi",
+  "weeklyChallenges.mode.move": "Move",
+  "weeklyChallenges.mode.nm": "NM",
+  "weeklyChallenges.mode.nmpz": "NMPZ",
+  "weeklyChallenges.line": "({mapName} / {timeLimit}s / {roundCount}r / {mode})"
 }
