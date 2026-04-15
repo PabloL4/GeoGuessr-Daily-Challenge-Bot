@@ -14,6 +14,7 @@ export type LeagueDay = {
     date: string;      // YYYY-MM-DD
     dayIndex: number;  // e.g. 736
     token: string;
+    resultsPostedAt?: string;
 
     // NEW (optional): map + mode used that day
     mapId?: string;
@@ -42,9 +43,19 @@ type Store = {
 
 const DATA_DIR = path.join(process.cwd(), "data");
 const STORE_PATH = path.join(DATA_DIR, "league.json");
+const RESULT_POSTS_DIR = path.join(DATA_DIR, "result_posts");
 
 function ensureDataDir(): void {
     if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
+}
+
+function ensureResultPostsDir(): void {
+    ensureDataDir();
+    if (!fs.existsSync(RESULT_POSTS_DIR)) fs.mkdirSync(RESULT_POSTS_DIR, { recursive: true });
+}
+
+function resultPostMarkerPath(token: string): string {
+    return path.join(RESULT_POSTS_DIR, `${token}.posted`);
 }
 
 function readStore(): Store {
@@ -207,6 +218,7 @@ export function recordDay(params: {
         date: dateKey,
         dayIndex: finalDayIndex,
         token: finalToken,
+        resultsPostedAt: existingDay?.resultsPostedAt,
 
         //Keep the existing if there is no a new challenge
         mapId: params.challenge?.mapId ?? existingDay?.mapId,
@@ -451,6 +463,47 @@ export function clearWeek(weekStartKey: string): void {
     const store = readStore();
     delete store.weeks[weekStartKey];
     writeStore(store);
+}
+
+export function tryReserveDailyResultPost(token: string, when = new Date()): boolean {
+    ensureResultPostsDir();
+    const markerPath = resultPostMarkerPath(token);
+
+    try {
+        fs.writeFileSync(markerPath, when.toISOString(), { encoding: "utf-8", flag: "wx" });
+        return true;
+    } catch (err: any) {
+        if (err?.code === "EEXIST") return false;
+        throw err;
+    }
+}
+
+export function releaseDailyResultPostReservation(token: string): void {
+    const markerPath = resultPostMarkerPath(token);
+    if (!fs.existsSync(markerPath)) return;
+    fs.unlinkSync(markerPath);
+}
+
+export function markDailyResultPosted(token: string, when = new Date()): void {
+    ensureResultPostsDir();
+
+    const iso = when.toISOString();
+    const markerPath = resultPostMarkerPath(token);
+    fs.writeFileSync(markerPath, iso, { encoding: "utf-8" });
+
+    const store = readStore();
+    let changed = false;
+
+    for (const week of Object.values(store.weeks ?? {})) {
+        for (const day of Object.values(week.days ?? {})) {
+            if (day.token !== token) continue;
+            if (day.resultsPostedAt === iso) return;
+            day.resultsPostedAt = iso;
+            changed = true;
+        }
+    }
+
+    if (changed) writeStore(store);
 }
 
 export function markWeekAsPosted(weekStartKey: string, when = new Date()): void {

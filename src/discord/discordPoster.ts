@@ -104,38 +104,53 @@ export const postToDiscord = async (message: string, imagePath?: string) => {
         ],
     });
 
-    client.once("ready", async () => {
-        try {
-            const channel = await client.channels.fetch(channelId);
+    const cleanup = () => {
+        if (imagePath && fs.existsSync(imagePath)) {
+            try {
+                fs.unlinkSync(imagePath);
+                console.log(t("discord.logs.deletedImage", { path: imagePath }));
+            } catch (e) {
+                console.error("[discord] failed to delete image:", imagePath, e);
+            }
+        }
 
-            if (channel instanceof TextChannel) {
+        client.destroy();
+    };
+
+    await new Promise<void>((resolve, reject) => {
+        client.once("ready", async () => {
+            try {
+                const channel = await client.channels.fetch(channelId);
+
+                if (!(channel instanceof TextChannel)) {
+                    const error = new Error(t("discord.errors.channelNotFound"));
+                    console.error(error.message);
+                    reject(error);
+                    return;
+                }
+
                 console.log("[discord] posting to channelId =", channelId);
 
                 await channel.send({
                     content: message,
                     files: imagePath ? [imagePath] : [],
                 });
-            } else {
-                console.error(t("discord.errors.channelNotFound"));
+
+                resolve();
+            } catch (err) {
+                console.error(t("discord.errors.failedToPost"), err);
+                reject(err);
+            } finally {
+                cleanup();
             }
-        } catch (err) {
+        });
+
+        client.login(discordToken).catch((err) => {
             console.error(t("discord.errors.failedToPost"), err);
-        } finally {
-            // delete the PNG after uploading it (Discord already saves it)
-            if (imagePath && fs.existsSync(imagePath)) {
-                try {
-                    fs.unlinkSync(imagePath);
-                    console.log(t("discord.logs.deletedImage", { path: imagePath }));
-                } catch (e) {
-                    console.error("[discord] failed to delete image:", imagePath, e);
-                }
-            }
-
-            client.destroy();
-        }
+            cleanup();
+            reject(err);
+        });
     });
-
-    await client.login(discordToken);
 };
 
 export const postChallengeToDiscord = async (settings: ChallengeSettingsForPost) => {

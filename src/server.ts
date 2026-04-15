@@ -7,8 +7,16 @@ import { postChallengeToDiscord, postResultToDiscord } from './discord/index.js'
 import { createChallenge, getHighscores } from './geoguessr-api/index.js';
 import { defaultChallenge } from './settings.js';
 import { postWeeklySummaryToDiscord } from "./discord/index.js";
-import { getPreviousWeekKeyIfMonday, markWeekAsPosted, clearWeek } from "./league/weeklyStore.js";
-import { recordDay, getDayIndexFor  } from "./league/weeklyStore.js";
+import {
+    getPreviousWeekKeyIfMonday,
+    markWeekAsPosted,
+    clearWeek,
+    markDailyResultPosted,
+    recordDay,
+    getDayIndexFor,
+    releaseDailyResultPostReservation,
+    tryReserveDailyResultPost,
+} from "./league/weeklyStore.js";
 import { postYearlySummary } from "./yearlySummary.js";
 import { postMonthlySummaryToDiscord } from "./monthlySummary.js";
 import { getHighscoresByToken } from "./geoguessr-api/highscores.js";
@@ -29,6 +37,21 @@ app.use("/say", express.text({ type: "*/*" }));
 
 
 let didLogStandalone = false;
+
+const getRequestMeta = (req: express.Request) => ({
+    ip: req.ip,
+    forwardedFor: req.header("x-forwarded-for") ?? "",
+    userAgent: req.header("user-agent") ?? "",
+});
+
+const hasAdminAccess = (req: express.Request): boolean => {
+    const adminToken = process.env.ADMIN_TOKEN;
+    const provided =
+        String(req.header("x-admin-token") ?? "").trim() ||
+        String(req.query.adminToken ?? "").trim();
+
+    return Boolean(adminToken) && provided === adminToken;
+};
 
 
 const toStoreMode = (mode: string): "move" | "nm" | "nmpz" => {
@@ -86,8 +109,6 @@ const highscores = async () => {
     const hs = await getHighscores();
     if (!hs) return;
 
-    await postResultToDiscord(hs);
-
     const scores: Record<string, number> = {};
     const players: Record<string, { nick: string; country?: string }> = {};
 
@@ -111,6 +132,20 @@ const highscores = async () => {
         scores,
         players,
     });
+
+    const reserved = tryReserveDailyResultPost(hs.token);
+    if (!reserved) {
+        console.log("[highscores] daily result already posted for token", hs.token);
+        return;
+    }
+
+    try {
+        await postResultToDiscord(hs);
+        markDailyResultPosted(hs.token);
+    } catch (err) {
+        releaseDailyResultPostReservation(hs.token);
+        throw err;
+    }
 };
 
 const maybePostWeeklySummary = async (forcedWeekStart?: string) => {
@@ -147,11 +182,25 @@ const postWeeklyChallengesList = async () => {
 };
 
 app.get('/challenge', (req, res) => {
+    console.log("[/challenge] trigger", getRequestMeta(req));
+    if (!hasAdminAccess(req)) {
+        console.warn("[/challenge] unauthorized trigger", getRequestMeta(req));
+        res.status(401).send(t("server.unauthorized"));
+        return;
+    }
+
     challenge();
     res.send(t("server.challenge.created"));
 });
 
 app.get('/highscores', (req, res) => {
+    console.log("[/highscores] trigger", getRequestMeta(req));
+    if (!hasAdminAccess(req)) {
+        console.warn("[/highscores] unauthorized trigger", getRequestMeta(req));
+        res.status(401).send(t("server.unauthorized"));
+        return;
+    }
+
     highscores();
     res.send(t("server.highscores.posted"));
 });
