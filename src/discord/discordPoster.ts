@@ -16,6 +16,66 @@ function pickOne<T>(arr: T[]): T {
     return arr[Math.floor(Math.random() * arr.length)];
 }
 
+async function withTextChannel<T>(run: (client: Client, channel: TextChannel) => Promise<T>): Promise<T> {
+    const client = new Client({
+        intents: [
+            GatewayIntentBits.Guilds,
+            GatewayIntentBits.GuildMessages,
+            GatewayIntentBits.GuildVoiceStates,
+            GatewayIntentBits.MessageContent,
+        ],
+    });
+
+    const cleanup = () => {
+        client.destroy();
+    };
+
+    return await new Promise<T>((resolve, reject) => {
+        client.once("ready", async () => {
+            try {
+                const channel = await client.channels.fetch(channelId);
+
+                if (!(channel instanceof TextChannel)) {
+                    const error = new Error(t("discord.errors.channelNotFound"));
+                    console.error(error.message);
+                    reject(error);
+                    return;
+                }
+
+                const result = await run(client, channel);
+                resolve(result);
+            } catch (err) {
+                console.error(t("discord.errors.failedToPost"), err);
+                reject(err);
+            } finally {
+                cleanup();
+            }
+        });
+
+        client.login(discordToken).catch((err) => {
+            console.error(t("discord.errors.failedToPost"), err);
+            cleanup();
+            reject(err);
+        });
+    });
+}
+
+async function hasRecentBotResultPost(challengeId: string): Promise<boolean> {
+    const url = challengeUrl(challengeId);
+
+    return withTextChannel(async (client, channel) => {
+        const recent = await channel.messages.fetch({ limit: 20 });
+        const found = recent.some((msg) => {
+            const sameBot = msg.author?.id === client.user?.id;
+            const looksLikeResult = msg.content.includes(url) && msg.content.includes("```");
+            return sameBot && looksLikeResult;
+        });
+
+        console.log("[discord] recent result post lookup for token", challengeId, "found", found);
+        return found;
+    });
+}
+
 const ROUND_10_KEYS = [
     "challenge.fun.round10.1",
     "challenge.fun.round10.2",
@@ -95,15 +155,6 @@ const RELAX_MESSAGES_KEYS = [
 ] as const;
     
 export const postToDiscord = async (message: string, imagePath?: string) => {
-    const client = new Client({
-        intents: [
-            GatewayIntentBits.Guilds,
-            GatewayIntentBits.GuildMessages,
-            GatewayIntentBits.GuildVoiceStates,
-            GatewayIntentBits.MessageContent,
-        ],
-    });
-
     const cleanup = () => {
         if (imagePath && fs.existsSync(imagePath)) {
             try {
@@ -113,44 +164,19 @@ export const postToDiscord = async (message: string, imagePath?: string) => {
                 console.error("[discord] failed to delete image:", imagePath, e);
             }
         }
-
-        client.destroy();
     };
 
-    await new Promise<void>((resolve, reject) => {
-        client.once("ready", async () => {
-            try {
-                const channel = await client.channels.fetch(channelId);
-
-                if (!(channel instanceof TextChannel)) {
-                    const error = new Error(t("discord.errors.channelNotFound"));
-                    console.error(error.message);
-                    reject(error);
-                    return;
-                }
-
-                console.log("[discord] posting to channelId =", channelId);
-
-                await channel.send({
-                    content: message,
-                    files: imagePath ? [imagePath] : [],
-                });
-
-                resolve();
-            } catch (err) {
-                console.error(t("discord.errors.failedToPost"), err);
-                reject(err);
-            } finally {
-                cleanup();
-            }
+    try {
+        await withTextChannel(async (_client, channel) => {
+            console.log("[discord] posting to channelId =", channelId);
+            await channel.send({
+                content: message,
+                files: imagePath ? [imagePath] : [],
+            });
         });
-
-        client.login(discordToken).catch((err) => {
-            console.error(t("discord.errors.failedToPost"), err);
-            cleanup();
-            reject(err);
-        });
-    });
+    } finally {
+        cleanup();
+    }
 };
 
 export const postChallengeToDiscord = async (settings: ChallengeSettingsForPost) => {
@@ -210,6 +236,11 @@ const message =
 
 
 export const postResultToDiscord = async (ranking: ChallengeHighscores) => {
+    if (await hasRecentBotResultPost(ranking.token)) {
+        console.log("[discord] duplicate result post skipped for token", ranking.token);
+        return;
+    }
+
     const roleId = process.env.DISCORD_ROLE_DAILY_ID;
     const ping = roleId ? `<@&${roleId}>` : t("discord.ping.dailyChallenge");
 
@@ -252,7 +283,9 @@ export const postResultToDiscord = async (ranking: ChallengeHighscores) => {
         leaderboard,
     });
 
+    console.log("[discord] sending result post for token", ranking.token, "dayIndex", dayIndex, "players", sortedItems.length);
     await postToDiscord(message);
+    console.log("[discord] result post sent for token", ranking.token);
 }
 
 

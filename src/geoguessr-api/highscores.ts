@@ -5,6 +5,7 @@ import { ChallengeHighscores, ChallengeToken } from '../types.js';
 import { playGame } from './challenge.js';
 import { createRequestOptions } from './common.js';
 import { loginAndGetCookie } from './login.js';
+import { notifyAuthFailureIfNeeded } from './authAlert.js';
 
 const tokenFilePath = path.resolve('challengeToken.json');
 
@@ -29,6 +30,10 @@ export const getHighscores = async (): Promise<ChallengeHighscores | undefined> 
 
         const options = createRequestOptions('GET', cookie);
         const response = await fetch(highscoresUrl(tokenData.token), options as any);
+        await notifyAuthFailureIfNeeded(response.status);
+        if (!response.ok) {
+            throw new Error(`Failed to fetch highscores: ${response.status} ${response.statusText}`);
+        }
         console.log('Highscores fetched:', response.statusText);
 
         // save token and response.json() to file
@@ -54,12 +59,16 @@ export const getHighscores = async (): Promise<ChallengeHighscores | undefined> 
     return undefined;
 };
 
-export const getHighscoresByToken = async (token: string): Promise<any | undefined> => {
+export const getHighscoresByToken = async (token: string, cookie?: string): Promise<any | undefined> => {
     try {
-        const cookie = await loginAndGetCookie();
-        const options = createRequestOptions("GET", cookie);
+        const authCookie = cookie ?? await loginAndGetCookie();
+        const options = createRequestOptions("GET", authCookie);
 
         const response = await fetch(highscoresUrl(token), options as any);
+        await notifyAuthFailureIfNeeded(response.status);
+        if (!response.ok) {
+            throw new Error(`Failed to fetch highscores by token: ${response.status} ${response.statusText}`);
+        }
         console.log("Highscores fetched:", response.statusText);
 
         const responseJson = await response.json();

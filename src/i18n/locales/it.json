@@ -32,6 +32,7 @@
   "discord.errors.failedToPost": "[discord] pubblicazione non riuscita:",
   "discord.logs.deletedImage": "[discord] immagine eliminata: {path}",
   "discord.ping.dailyChallenge": "@Sfida Giornaliera",
+  "geoguessr.cookieExpired": "Cookie scaduto, contatta l'admin.",
   "challenge.post.title": "## 🌍 Sfida giornaliera {idx} — <t:{timestamp}:D>  {ping}",
   "challenge.post.body": "🔗 Link: {url}  \n🗺️ Mappa: {map}\n🎮 Modalità: {mode} ({timeLimit}s) — {roundCount} round",
   "results.post.title": "## 📊 Risultati della sfida {idx} — <t:{timestamp}:D>  {ping}",

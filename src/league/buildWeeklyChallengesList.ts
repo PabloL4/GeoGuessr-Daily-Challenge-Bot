@@ -5,6 +5,7 @@ import { t } from "../i18n/index.js";
 
 type StoredLeagueDay = {
     date: string;
+    dayIndex?: number;
     token: string;
     mapName?: string;
     mapUrl?: string;
@@ -25,6 +26,7 @@ type Store = {
 
 export type WeeklyChallengeListItem = {
     date: string;           // YYYY-MM-DD
+    dayIndex?: number;
     dayKey: "monday" | "tuesday" | "wednesday" | "thursday" | "friday" | "saturday";
     token: string;
     challengeUrl: string;
@@ -96,6 +98,7 @@ export function buildWeeklyChallengesList(referenceDate = new Date()): WeeklyCha
 
         items.push({
             date: dateKey,
+            dayIndex: day.dayIndex,
             dayKey,
             token: day.token,
             challengeUrl: challengeUrl(day.token),
@@ -126,7 +129,10 @@ export function formatWeeklyChallengesList(referenceDate = new Date()): string {
     lines.push("");
 
     for (const item of items) {
-        lines.push(`**${t(`weeklyChallenges.day.${item.dayKey}`)}**`);
+        const dayLabel = t(`weeklyChallenges.day.${item.dayKey}`);
+        const dayWithIndex = item.dayIndex ? `${dayLabel} (#${item.dayIndex})` : dayLabel;
+
+        lines.push(`**${dayWithIndex}**`);
         lines.push(item.challengeUrl);
         lines.push(
             t("weeklyChallenges.line", {

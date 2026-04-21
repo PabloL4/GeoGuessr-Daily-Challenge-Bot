@@ -21,6 +21,7 @@ import { postYearlySummary } from "./yearlySummary.js";
 import { postMonthlySummaryToDiscord } from "./monthlySummary.js";
 import { getHighscoresByToken } from "./geoguessr-api/highscores.js";
 import { resyncWeek } from "./league/resyncWeek.js";
+import { resyncMonth } from "./league/resyncRange.js";
 import { postToDiscord } from "./discord/discordPoster.js";
 import { setLang, resolveLang, t } from "./i18n/index.js";
 import { postWeeklyChallengesListToDiscord } from "./discord/index.js";
@@ -109,6 +110,8 @@ const highscores = async () => {
     const hs = await getHighscores();
     if (!hs) return;
 
+    console.log("[highscores] fetched token", hs.token, "timestamp", hs.timestamp);
+
     const scores: Record<string, number> = {};
     const players: Record<string, { nick: string; country?: string }> = {};
 
@@ -133,17 +136,25 @@ const highscores = async () => {
         players,
     });
 
+    console.log("[highscores] recordDay saved for token", hs.token, "players", Object.keys(scores).length);
+
     const reserved = tryReserveDailyResultPost(hs.token);
     if (!reserved) {
         console.log("[highscores] daily result already posted for token", hs.token);
         return;
     }
 
+    console.log("[highscores] reservation acquired for token", hs.token);
+
     try {
+        console.log("[highscores] posting result to Discord for token", hs.token);
         await postResultToDiscord(hs);
         markDailyResultPosted(hs.token);
+        console.log("[highscores] markDailyResultPosted completed for token", hs.token);
     } catch (err) {
+        console.error("[highscores] failed while posting token", hs.token, err);
         releaseDailyResultPostReservation(hs.token);
+        console.log("[highscores] reservation released for token", hs.token);
         throw err;
     }
 };
@@ -181,6 +192,16 @@ const postWeeklyChallengesList = async () => {
     }
 };
 
+const maybePostMonthlySummary = async (year: number, month: number) => {
+    try {
+        await resyncMonth(year, month);
+    } catch (err) {
+        console.error("[monthly] failed to resync month", { year, month }, err);
+    }
+
+    await postMonthlySummaryToDiscord(year, month);
+};
+
 app.get('/challenge', (req, res) => {
     console.log("[/challenge] trigger", getRequestMeta(req));
     if (!hasAdminAccess(req)) {
@@ -193,7 +214,7 @@ app.get('/challenge', (req, res) => {
     res.send(t("server.challenge.created"));
 });
 
-app.get('/highscores', (req, res) => {
+app.get('/highscores', async (req, res) => {
     console.log("[/highscores] trigger", getRequestMeta(req));
     if (!hasAdminAccess(req)) {
         console.warn("[/highscores] unauthorized trigger", getRequestMeta(req));
@@ -201,8 +222,13 @@ app.get('/highscores', (req, res) => {
         return;
     }
 
-    highscores();
-    res.send(t("server.highscores.posted"));
+    try {
+        await highscores();
+        res.send(t("server.highscores.posted"));
+    } catch (err) {
+        console.error("[/highscores] error:", err);
+        res.status(500).send(t("server.error.generic"));
+    }
 });
 
 app.get("/weekly", async (req, res) => {
@@ -234,7 +260,7 @@ app.get("/monthly", async (req, res) => {
             return res.status(400).send(t("server.monthly.badParams"));
         }
 
-        await postMonthlySummaryToDiscord(year, month);
+        await maybePostMonthlySummary(year, month);
         res.send("ok");
     } catch (e: any) {
         console.error("[/monthly] error:", e);
@@ -469,7 +495,7 @@ if (mode === '--standalone') {
         const month = now.getMonth() === 0 ? 12 : now.getMonth(); // 1–12
 
         console.log(t("cron.monthly.posting", { year, month }));
-        await postMonthlySummaryToDiscord(year, month);
+        await maybePostMonthlySummary(year, month);
     });
 
     //Annual: summary (January 1 at 12:00)

@@ -6,6 +6,7 @@ import { ChallengeResponse, ChallengeSettings, ChallengeSettingsForPost, Challen
 import { createRequestOptions } from './common.js';
 import { loginAndGetCookie } from './login.js';
 import { fetchMapName } from './maps.js';
+import { notifyAuthFailureIfNeeded } from './authAlert.js';
 
 const challengeApiUrl = 'https://www.geoguessr.com/api/v3/challenges';
 const tokenFilePath = path.resolve('challengeToken.json');
@@ -19,8 +20,9 @@ export const createChallenge = async (settings: ChallengeSettings): Promise<Chal
         console.log("[challenge] request body =", JSON.stringify(payload, null, 2));
 
         const response = await fetch(challengeApiUrl, options as any);
+        await notifyAuthFailureIfNeeded(response.status);
         if (!response.ok) {
-            throw new Error(response.statusText);
+            throw new Error(`${response.status} ${response.statusText}`);
         }
         const data = await response.json() as ChallengeResponse;
         console.log("[challenge] response json =", {
@@ -78,8 +80,9 @@ const startGame = async (token: ChallengeToken): Promise<GameToken | undefined> 
         const challengeURL = `${challengeApiUrl}/${token.token}`;
         const options = createRequestOptions('POST', cookie);
         const response = await fetch(challengeURL, options as any);
+        await notifyAuthFailureIfNeeded(response.status);
         if (!response.ok) {
-            throw new Error(response.statusText);
+            throw new Error(`${response.status} ${response.statusText}`);
         }
         const data = await response.json() as GameToken;
         console.log('Game started:', data.token);
@@ -102,8 +105,9 @@ const playRound = async (token: GameToken, round: number): Promise<void> => {
         };
         const options = createRequestOptions('POST', cookie, payload);
         const response = await fetch(roundUrl, options as any);
+        await notifyAuthFailureIfNeeded(response.status);
         if (!response.ok) {
-            throw new Error(response.statusText);
+            throw new Error(`${response.status} ${response.statusText}`);
         }
         console.log(`Round ${round} played`);
     } catch (error) {
@@ -117,8 +121,9 @@ const nextRound = async (token: GameToken): Promise<void> => {
         const roundUrl = `${gameUrl}/${token.token}?client=web`;
         const options = createRequestOptions('GET', cookie);
         const response = await fetch(roundUrl, options as any);
+        await notifyAuthFailureIfNeeded(response.status);
         if (!response.ok) {
-            throw new Error(response.statusText);
+            throw new Error(`${response.status} ${response.statusText}`);
         }
         console.log('Next round');
     } catch (error) {

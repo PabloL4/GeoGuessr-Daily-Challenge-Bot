@@ -32,6 +32,7 @@
   "discord.errors.failedToPost": "[discord] Posten fehlgeschlagen:",
   "discord.logs.deletedImage": "[discord] Bild gelöscht: {path}",
   "discord.ping.dailyChallenge": "@Tägliche Challenge",
+  "geoguessr.cookieExpired": "Cookie abgelaufen, kontaktiere den Admin.",
   "challenge.post.title": "## 🌍 Tägliche Challenge {idx} — <t:{timestamp}:D>  {ping}",
   "challenge.post.body": "🔗 Link: {url}  \n🗺️ Karte: {map}\n🎮 Modus: {mode} ({timeLimit}s) — {roundCount} Runden",
   "results.post.title": "## 📊 Ergebnisse der Challenge {idx} — <t:{timestamp}:D>  {ping}",

@@ -32,6 +32,7 @@
   "discord.errors.failedToPost": "[discord] échec de publication :",
   "discord.logs.deletedImage": "[discord] image supprimée : {path}",
   "discord.ping.dailyChallenge": "@Défi Quotidien",
+  "geoguessr.cookieExpired": "Cookie expiré, contactez l'admin.",
   "challenge.post.title": "## 🌍 Défi quotidien {idx} — <t:{timestamp}:D>  {ping}",
   "challenge.post.body": "🔗 Lien : {url}  \n🗺️ Carte : {map}\n🎮 Mode : {mode} ({timeLimit}s) — {roundCount} manches",
   "results.post.title": "## 📊 Résultats du défi {idx} — <t:{timestamp}:D>  {ping}",
