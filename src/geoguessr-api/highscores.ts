@@ -3,7 +3,7 @@ import fetch from 'node-fetch';
 import path from 'path';
 import { ChallengeHighscores, ChallengeToken } from '../types.js';
 import { playGame } from './challenge.js';
-import { createRequestOptions } from './common.js';
+import { createRequestOptions, getEntryScore } from './common.js';
 import { loginAndGetCookie } from './login.js';
 import { notifyAuthFailureIfNeeded } from './authAlert.js';
 
@@ -57,6 +57,35 @@ export const getHighscores = async (): Promise<ChallengeHighscores | undefined> 
         console.error('Error getting highscores:', error);
     }
     return undefined;
+};
+
+// Extracts scores/players from a highscores response. Entries without a player id or score
+// (e.g. unexpected API shapes) are skipped and logged instead of crashing the whole run.
+export const parseHighscoreItems = (rawItems: any[] = []) => {
+    const scores: Record<string, number> = {};
+    const players: Record<string, { nick: string; country?: string }> = {};
+    const items: any[] = [];
+
+    for (const entry of rawItems) {
+        const player = entry?.game?.player;
+        const amount = getEntryScore(entry);
+
+        if (!player?.id || !Number.isFinite(amount)) {
+            const { guesses, ...playerInfo } = player ?? {};
+            console.warn("[highscores] skipping entry without player/score.",
+                "entry keys:", Object.keys(entry ?? {}),
+                "game keys:", Object.keys(entry?.game ?? {}),
+                "player:", JSON.stringify(playerInfo)?.slice(0, 1500),
+                "first guess:", JSON.stringify(guesses?.[0])?.slice(0, 500));
+            continue;
+        }
+
+        scores[player.id] = amount;
+        players[player.id] = { nick: player.nick, country: player.countryCode?.toUpperCase() };
+        items.push(entry);
+    }
+
+    return { scores, players, items };
 };
 
 export const getHighscoresByToken = async (token: string, cookie?: string): Promise<any | undefined> => {

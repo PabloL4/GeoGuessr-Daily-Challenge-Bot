@@ -122,6 +122,17 @@ export function getDayIndexFor(date: Date): number {
     return baseDay + daysBetween(start, date);
 }
 
+export function getDayByDate(dateKey: string): LeagueDay | null {
+    const store = readStore();
+
+    for (const week of Object.values(store.weeks ?? {})) {
+        const day = week.days?.[dateKey];
+        if (day?.token) return day;
+    }
+
+    return null;
+}
+
 export function getDayIndexByToken(token: string): number | null {
     const store = readStore();
 
@@ -422,20 +433,32 @@ export function getWeeklyPodium(weekStartKey: string): Array<{ geoId: string; to
 }
 
 
-export function getWeeklyPerfectAttendance(weekStartKey: string): string[] {
-    const store = readStore();
-    const week = store.weeks[weekStartKey];
-    if (!week) return [];
-
-    const monday = new Date(weekStartKey);
+// Days of the week that actually had a challenge (a day may be missing, e.g. creation failed)
+function getWeeklyChallengeDates(week: LeagueWeek): string[] {
+    const monday = new Date(week.weekStart);
     monday.setHours(0, 0, 0, 0);
 
     const dates: string[] = [];
     for (let i = 0; i < 7; i++) {
         const d = new Date(monday);
         d.setDate(d.getDate() + i);
-        dates.push(toYmd(d));
+        const key = toYmd(d);
+        if (week.days[key]) dates.push(key);
     }
+    return dates;
+}
+
+export function getWeeklyChallengeCount(weekStartKey: string): number {
+    const week = readStore().weeks[weekStartKey];
+    return week ? getWeeklyChallengeDates(week).length : 0;
+}
+
+export function getWeeklyPerfectAttendance(weekStartKey: string): string[] {
+    const store = readStore();
+    const week = store.weeks[weekStartKey];
+    if (!week) return [];
+
+    const dates = getWeeklyChallengeDates(week);
 
     // Gather all players who appeared at least once
     const players = new Set<string>();

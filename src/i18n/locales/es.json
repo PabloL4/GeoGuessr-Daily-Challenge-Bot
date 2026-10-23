@@ -39,9 +39,11 @@
 
   "challenge.post.title": "## 🌍 Desafío diario {idx} — <t:{timestamp}:D>  {ping}",
   "challenge.post.body": "🔗 Enlace: {url}  \n🗺️ Mapa: {map}\n🎮 Modo: {mode} ({timeLimit}s) — {roundCount} rondas",
+  "challenge.post.lateNote": "⚠️ **Desafío perdido**: no se pudo publicar en su día por un problema técnico. ¡Todavía se puede jugar!",
 
   "results.post.title": "## 📊 Resultados del desafío {idx} — <t:{timestamp}:D>  {ping}",
   "results.post.body": "🔗 Enlace: {url}\n📈 Puntuación media: {average}\n🏆 Ranking:\n\n```\n{leaderboard}\n```",
+  "results.post.lateNote": "⚠️ **Resultados con retraso**: no se pudieron publicar en su día por un problema técnico.",
 
   "challenge.fun.round10.1": "🔟 **Especial 10 rondas** — hoy toca maratón 🏃‍♂️",
   "challenge.fun.round10.2": "🔟 **Día largo** — 10 rondas para los valientes 💪",
@@ -119,7 +121,7 @@
   "weekly.message.header": "## RESUMEN {title} {ping}",
   "weekly.message.intro": "¡Hola a todos! Les dejo el resumen con la clasificación general de los últimos 7 desafíos.",
   "weekly.message.podiumBlock": "Felicitaciones a los ganadores de la semana:\n\n{podiumLines}",
-  "weekly.message.perfectBlock": "Muchas gracias también a quienes jugaron **todos los desafíos (7/7)**:\n{perfectLine}",
+  "weekly.message.perfectBlock": "Muchas gracias también a quienes jugaron **todos los desafíos ({days}/{days})**:\n{perfectLine}",
   "weekly.message.outro": "Comienza una nueva ronda de desafíos, así que ¡prepárense!",
 
   "ranking.header.name": "NOMBRE",

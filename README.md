@@ -92,11 +92,13 @@ npm start
 - Stores all data in a single JSON store (`league.json`)
 - Players tracked by **GeoGuessr userId**
 - Late plays supported via **weekly resync**
+- Duplicate-safe Discord posting: retries on slow connections check the channel first, so a message is never posted twice
+- Missed days (bot offline, no internet…) can be recovered with the [repost endpoints](#-recovering-missed-posts)
 
 ### 🏆 Weekly Summary
 - Automatic weekly league (Monday → Sunday)
 - Podium 🥇🥈🥉
-- Perfect attendance (7/7)
+- Perfect attendance (all challenges of the week; days without a challenge are not counted)
 - Extra awards
 - Full ranking table rendered as PNG
 - Weekly resync ensures late players are included
@@ -215,9 +217,9 @@ MY_DISCORD_ID=123456789012345678
 DISCORD_ROLE_DAILY_ID=098765432101234564321
 
 # --------------------------------------
-# Custom Message Endpoint
+# Admin Endpoints
 # --------------------------------------
-# Token required to use the /say endpoint
+# Token required by /say, /challenge, /highscores and /repost/*
 ADMIN_TOKEN=abcdef1234567890abcdef1234567890
 
 # --------------------------------------
@@ -326,9 +328,11 @@ pm2 start npm \
 
 ## 🔌 Manual Endpoints
 
+`/challenge` and `/highscores` require the admin token (header `x-admin-token`). Use single quotes so the shell does not expand special characters (`$`, `!`) in the token.
+
 ```bash
-curl http://localhost:25000/challenge
-curl http://localhost:25000/highscores
+curl -H 'x-admin-token: ADMIN_TOKEN' http://localhost:25000/challenge
+curl -H 'x-admin-token: ADMIN_TOKEN' http://localhost:25000/highscores
 curl "http://localhost:25000/weekly?weekStart=2026-01-19"
 curl "http://localhost:25000/monthly?year=2026&month=01"
 curl "http://localhost:25000/yearly?year=2026"
@@ -349,6 +353,25 @@ curl -X POST "http://localhost:25000/say" \
   -H "Content-Type: text/plain; charset=utf-8" \
   --data-raw "Hello!"
 ```
+
+---
+
+## 🩹 Recovering Missed Posts
+
+If the bot could not post on a given day (server down, no internet, Discord unreachable…), the missed messages can be posted afterwards. Both endpoints require the admin token and take the day of the challenge (`YYYY-MM-DD`).
+
+```bash
+# Results of a past challenge (fetches the scores, saves them and posts the ranking)
+curl -H 'x-admin-token: ADMIN_TOKEN' 'http://localhost:25000/repost/result?date=2026-10-20'
+
+# Announcement of a challenge that was created but never reached Discord
+curl -H 'x-admin-token: ADMIN_TOKEN' 'http://localhost:25000/repost/challenge?date=2026-10-21'
+```
+
+- Posts keep the original challenge number and date, and include a short "missed challenge / late results" note. Add `&late=0` to omit it.
+- Results are never posted twice: if they were already posted, the scores are just refreshed.
+- If the challenge was never created on GeoGuessr (it is not in `league.json`), there is nothing to repost; the endpoint returns 404. Use `/say` to let players know.
+- A missing day does not break summaries: it shows as an empty column in the weekly table and is ignored for perfect attendance.
 
 ---
 

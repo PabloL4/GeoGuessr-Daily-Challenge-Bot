@@ -21,3 +21,10 @@ export const createRequestOptions = <T>(method: string, cookie?: string, payload
     }
     return requestOptions;
 };
+
+// Total score of a highscores entry. GeoGuessr moved it from `totalScore.amount` (string)
+// to `totalScoreInPoints` (number) in October 2026; both shapes are accepted.
+export const getEntryScore = (entry: any): number => {
+    const player = entry?.game?.player;
+    return Number(player?.totalScoreInPoints ?? player?.totalScore?.amount);
+};

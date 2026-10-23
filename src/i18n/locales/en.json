@@ -38,9 +38,11 @@
 
   "challenge.post.title": "## 🌍 Daily challenge {idx} — <t:{timestamp}:D>  {ping}",
   "challenge.post.body": "🔗 Link: {url}  \n🗺️ Map: {map}\n🎮 Mode: {mode} ({timeLimit}s) — {roundCount} rounds",
+  "challenge.post.lateNote": "⚠️ **Missed challenge**: it couldn't be posted on its day due to a technical issue. You can still play it!",
 
   "results.post.title": "## 📊 Challenge results {idx} — <t:{timestamp}:D>  {ping}",
   "results.post.body": "🔗 Link: {url}\n📈 Average score: {average}\n🏆 Ranking:\n\n```\n{leaderboard}\n```",
+  "results.post.lateNote": "⚠️ **Late results**: they couldn't be posted on time due to a technical issue.",
 
   "challenge.fun.round10.1": "🔟 **Special 10 rounds** — marathon day 🏃‍♂️",
   "challenge.fun.round10.2": "🔟 **Long day** — 10 rounds for the brave 💪",
@@ -118,7 +120,7 @@
   "weekly.message.header": "## SUMMARY {title} {ping}",
   "weekly.message.intro": "Hi everyone! Here’s the summary with the overall standings from the last 7 challenges.",
   "weekly.message.podiumBlock": "Congrats to this week’s winners:\n\n{podiumLines}",
-  "weekly.message.perfectBlock": "Thanks as well to everyone who played **all challenges (7/7)**:\n{perfectLine}",
+  "weekly.message.perfectBlock": "Thanks as well to everyone who played **all challenges ({days}/{days})**:\n{perfectLine}",
   "weekly.message.outro": "A new round of challenges begins now — get ready!",
 
   "ranking.header.name": "NAME",

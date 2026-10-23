@@ -1,5 +1,5 @@
 import { postToDiscord } from "./discordPoster.js";
-import { buildWeeklyTable, getWeeklyPodium, getWeeklyPerfectAttendance } from "../league/weeklyStore.js";
+import { buildWeeklyTable, getWeeklyPodium, getWeeklyPerfectAttendance, getWeeklyChallengeCount } from "../league/weeklyStore.js";
 import { displayNameForGeoId } from "./mention.js";
 import { renderTableImage } from "./renderTableImage.js";
 import { getWeeklyBestDailyByRounds, getWeeklyBestDailyByRoundsAndMode } from "../league/weeklyStore.js";
@@ -117,7 +117,7 @@ export async function postWeeklySummaryToDiscord(weekStartKey: string): Promise<
             : "") +
         extraAwardsBlock +
         (perfect.length
-            ? t("weekly.message.perfectBlock", { perfectLine }) + "\n\n"
+            ? t("weekly.message.perfectBlock", { perfectLine, days: getWeeklyChallengeCount(weekStartKey) }) + "\n\n"
             : "") +
         t("weekly.message.outro");
 

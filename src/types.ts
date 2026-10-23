@@ -31,6 +31,8 @@ export interface ChallengeSettingsForPost {
     mapUrl?: string;
 
     dayIndex?: number;
+    timestamp?: number; // unix seconds shown in the post; defaults to now
+    late?: boolean; // adds a "missed challenge" note when re-posting
 }
 
 

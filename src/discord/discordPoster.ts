@@ -4,6 +4,7 @@ import { ChallengeHighscores, ChallengeSettingsForPost } from '../types.js';
 import fs from "node:fs";
 import { getDayIndexByToken } from "../league/weeklyStore.js";
 import { t, getLocale  } from "../i18n/index.js";
+import { getEntryScore } from "../geoguessr-api/common.js";
 
 
 dotenv.config();
@@ -24,6 +25,9 @@ async function withTextChannel<T>(run: (client: Client, channel: TextChannel) =>
             GatewayIntentBits.GuildVoiceStates,
             GatewayIntentBits.MessageContent,
         ],
+        // No automatic REST retries: on a slow connection Discord may receive the message but the
+        // response times out, and a blind retry posts it twice. postToDiscord retries safely instead.
+        rest: { retries: 0, timeout: 30_000 },
     });
 
     const cleanup = () => {
@@ -166,18 +170,40 @@ export const postToDiscord = async (message: string, imagePath?: string) => {
         }
     };
 
+    const maxAttempts = 3;
+
     try {
-        await withTextChannel(async (_client, channel) => {
-            console.log("[discord] posting to channelId =", channelId);
-            await channel.send({
-                content: message,
-                files: imagePath ? [imagePath] : [],
-            });
-        });
+        for (let attempt = 1; ; attempt++) {
+            try {
+                await withTextChannel(async (client, channel) => {
+                    // A previous attempt may have reached Discord even though it failed on our side
+                    if (attempt > 1 && await wasAlreadySent(client, channel, message)) {
+                        console.log("[discord] message already in channel, skipping retry");
+                        return;
+                    }
+
+                    console.log("[discord] posting to channelId =", channelId, "attempt", attempt);
+                    await channel.send({
+                        content: message,
+                        files: imagePath ? [imagePath] : [],
+                    });
+                });
+                return;
+            } catch (err) {
+                if (attempt >= maxAttempts) throw err;
+                console.warn("[discord] post failed, retrying in 10s (attempt", attempt, "of", maxAttempts, ")");
+                await new Promise((r) => setTimeout(r, 10_000));
+            }
+        }
     } finally {
         cleanup();
     }
 };
+
+async function wasAlreadySent(client: Client, channel: TextChannel, message: string): Promise<boolean> {
+    const recent = await channel.messages.fetch({ limit: 10 });
+    return recent.some((msg) => msg.author?.id === client.user?.id && msg.content.trim() === message.trim());
+}
 
 export const postChallengeToDiscord = async (settings: ChallengeSettingsForPost) => {
 
@@ -187,7 +213,7 @@ export const postChallengeToDiscord = async (settings: ChallengeSettingsForPost)
     //     timeLimit: settings.timeLimit,
     //     roundCount: settings.roundCount,
     // });
-    const timestamp = Math.floor(Date.now() / 1000);
+    const timestamp = settings.timestamp ?? Math.floor(Date.now() / 1000);
     const roleId = process.env.DISCORD_ROLE_DAILY_ID;
     const ping = roleId
     ? `<@&${roleId}>`
@@ -199,6 +225,10 @@ export const postChallengeToDiscord = async (settings: ChallengeSettingsForPost)
 
     // “funny” text
     const extraLines: string[] = [];
+
+    if (settings.late) {
+        extraLines.push(t("challenge.post.lateNote"));
+    }
 
     if (roundCount === 10) {
         extraLines.push(t(pickOne([...ROUND_10_KEYS])));
@@ -235,7 +265,7 @@ const message =
 };
 
 
-export const postResultToDiscord = async (ranking: ChallengeHighscores) => {
+export const postResultToDiscord = async (ranking: ChallengeHighscores, late = false) => {
     if (await hasRecentBotResultPost(ranking.token)) {
         console.log("[discord] duplicate result post skipped for token", ranking.token);
         return;
@@ -246,9 +276,7 @@ export const postResultToDiscord = async (ranking: ChallengeHighscores) => {
 
     // ALWAYS sort by score (desc)
     const sortedItems = [...ranking.highscores.items].sort((a: any, b: any) => {
-        const sa = Number(a?.game?.player?.totalScore?.amount ?? 0);
-        const sb = Number(b?.game?.player?.totalScore?.amount ?? 0);
-        return sb - sa;
+        return (getEntryScore(b) || 0) - (getEntryScore(a) || 0);
     });
 
     const leaderboard = sortedItems
@@ -258,14 +286,14 @@ export const postResultToDiscord = async (ranking: ChallengeHighscores) => {
 
         // locale depends on language
         const locale = getLocale();
-        const score = Number(entry.game.player.totalScore.amount).toLocaleString(locale);
+        const score = (getEntryScore(entry) || 0).toLocaleString(locale);
 
         return `${position} ${name} – ${score} pts`;
     })
     .join("\n");
 
     const totalScore = sortedItems.reduce(
-        (acc: number, entry: any) => acc + Number(entry?.game?.player?.totalScore?.amount ?? 0),
+        (acc: number, entry: any) => acc + (getEntryScore(entry) || 0),
         0
     );
 
@@ -277,6 +305,7 @@ export const postResultToDiscord = async (ranking: ChallengeHighscores) => {
     const message =
     t("results.post.title", { idx, timestamp: ranking.timestamp, ping }) +
     "\n" +
+    (late ? t("results.post.lateNote") + "\n" : "") +
     t("results.post.body", {
         url: challengeUrl(ranking.token),
         average,

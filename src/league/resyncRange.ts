@@ -1,7 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import { recordDay } from "./weeklyStore.js";
-import { getHighscoresByToken } from "../geoguessr-api/highscores.js";
+import { getHighscoresByToken, parseHighscoreItems } from "../geoguessr-api/highscores.js";
 import { loginAndGetCookie } from "../geoguessr-api/login.js";
 
 const STORE_PATH = path.join(process.cwd(), "data", "league.json");
@@ -58,20 +58,9 @@ export async function resyncDateRange(startYmd: string, endYmd: string): Promise
         const highscores = await getHighscoresByToken(token, cookie);
         if (!highscores?.items?.length) continue;
 
-        const scores: Record<string, number> = {};
-        const players: Record<string, { nick: string; country?: string }> = {};
+        const { scores, players, items } = parseHighscoreItems(highscores.items);
 
-        for (const entry of highscores.items) {
-            const geoId = entry.game.player.id;
-            const nick = entry.game.player.nick;
-            const country = entry.game.player.countryCode?.toUpperCase();
-            const amount = Number(entry.game.player.totalScore.amount);
-
-            scores[geoId] = Number.isFinite(amount) ? amount : 0;
-            players[geoId] = { nick, country };
-        }
-
-        totalPlayers += highscores.items.length;
+        totalPlayers += items.length;
         updatedDays++;
 
         await recordDay({

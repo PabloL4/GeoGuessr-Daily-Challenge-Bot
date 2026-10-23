@@ -14,17 +14,19 @@ import {
     markDailyResultPosted,
     recordDay,
     getDayIndexFor,
+    getDayByDate,
     releaseDailyResultPostReservation,
     tryReserveDailyResultPost,
 } from "./league/weeklyStore.js";
 import { postYearlySummary } from "./yearlySummary.js";
 import { postMonthlySummaryToDiscord } from "./monthlySummary.js";
-import { getHighscoresByToken } from "./geoguessr-api/highscores.js";
+import { getHighscoresByToken, parseHighscoreItems } from "./geoguessr-api/highscores.js";
 import { resyncWeek } from "./league/resyncWeek.js";
 import { resyncMonth } from "./league/resyncRange.js";
 import { postToDiscord } from "./discord/discordPoster.js";
 import { setLang, resolveLang, t } from "./i18n/index.js";
 import { postWeeklyChallengesListToDiscord } from "./discord/index.js";
+import { ChallengeHighscores, GameMode } from "./types.js";
 
 dotenv.config();
 
@@ -60,6 +62,20 @@ const toStoreMode = (mode: string): "move" | "nm" | "nmpz" => {
     if (mode === "NM") return "nm";
     return "nmpz";
 };
+
+const fromStoreMode = (mode?: string): GameMode => {
+    if (mode === "move") return "Move";
+    if (mode === "nm") return "NM";
+    return "NMPZ";
+};
+
+// Re-posts carry a "missed challenge" note unless ?late=0
+const isLate = (req: express.Request) => String(req.query.late ?? "1") !== "0";
+
+const isYmd = (value: string) => /^\d{4}-\d{2}-\d{2}$/.test(value);
+
+// 18:00 local time of the given day, as unix seconds (when the challenge would normally be posted)
+const challengeTimestampFor = (date: string) => Math.floor(new Date(`${date}T18:00:00`).getTime() / 1000);
 
 const challenge = async () => {
     const challengePayload = await defaultChallenge(); // { map, mode }
@@ -112,18 +128,9 @@ const highscores = async () => {
 
     console.log("[highscores] fetched token", hs.token, "timestamp", hs.timestamp);
 
-    const scores: Record<string, number> = {};
-    const players: Record<string, { nick: string; country?: string }> = {};
-
-    for (const entry of hs.highscores.items) {
-        const geoId = entry.game.player.id;
-        const nick = entry.game.player.nick;
-        const country = entry.game.player.countryCode?.toUpperCase();
-
-        const amount = Number(entry.game.player.totalScore.amount);
-        scores[geoId] = Number.isFinite(amount) ? amount : 0;
-
-        players[geoId] = { nick, country };
+    const { scores, players, items } = parseHighscoreItems(hs.highscores.items);
+    if (hs.highscores.items?.length && !items.length) {
+        throw new Error(`[highscores] no entry of token ${hs.token} could be parsed; not posting an empty ranking`);
     }
 
 
@@ -138,17 +145,22 @@ const highscores = async () => {
 
     console.log("[highscores] recordDay saved for token", hs.token, "players", Object.keys(scores).length);
 
+    await postResultOnce({ ...hs, highscores: { ...hs.highscores, items } as any });
+};
+
+// Posts a result to Discord unless it was already posted for that token. Returns false if skipped.
+const postResultOnce = async (hs: ChallengeHighscores, late = false): Promise<boolean> => {
     const reserved = tryReserveDailyResultPost(hs.token);
     if (!reserved) {
         console.log("[highscores] daily result already posted for token", hs.token);
-        return;
+        return false;
     }
 
     console.log("[highscores] reservation acquired for token", hs.token);
 
     try {
         console.log("[highscores] posting result to Discord for token", hs.token);
-        await postResultToDiscord(hs);
+        await postResultToDiscord(hs, late);
         markDailyResultPosted(hs.token);
         console.log("[highscores] markDailyResultPosted completed for token", hs.token);
     } catch (err) {
@@ -157,6 +169,7 @@ const highscores = async () => {
         console.log("[highscores] reservation released for token", hs.token);
         throw err;
     }
+    return true;
 };
 
 const maybePostWeeklySummary = async (forcedWeekStart?: string) => {
@@ -325,18 +338,7 @@ app.get("/backfill", async (req, res) => {
             return;
         }
 
-        const scores: Record<string, number> = {};
-        const players: Record<string, { nick: string; country?: string }> = {};
-
-        for (const entry of highscores.items) {
-            const geoId = entry.game.player.id;
-            const nick = entry.game.player.nick;
-            const country = entry.game.player.countryCode?.toUpperCase();
-            const amount = Number(entry.game.player.totalScore.amount);
-
-            scores[geoId] = Number.isFinite(amount) ? amount : 0;
-            players[geoId] = { nick, country };
-        }
+        const { scores, players } = parseHighscoreItems(highscores.items);
 
         //use the date of the day we filled
         const resultDate = new Date(`${date}T12:00:00Z`);
@@ -361,6 +363,97 @@ app.get("/backfill", async (req, res) => {
     }
 });
 
+
+// Re-post the challenge announcement of a past day (e.g. it was created but Discord was unreachable)
+app.get("/repost/challenge", async (req, res) => {
+    console.log("[/repost/challenge] trigger", getRequestMeta(req));
+    if (!hasAdminAccess(req)) {
+        res.status(401).send(t("server.unauthorized"));
+        return;
+    }
+
+    try {
+        const date = String(req.query.date ?? "").trim();
+        if (!isYmd(date)) {
+            res.status(400).send("Missing/invalid date. Use /repost/challenge?date=YYYY-MM-DD");
+            return;
+        }
+
+        const day = getDayByDate(date);
+        if (!day) {
+            res.status(404).send(t("server.backfill.notFound", { date }));
+            return;
+        }
+
+        await postChallengeToDiscord({
+            name: day.mapName ?? "Unknown",
+            mode: fromStoreMode(day.mode),
+            token: day.token,
+            timeLimit: day.timeLimit,
+            roundCount: day.roundCount,
+            mapId: day.mapId,
+            mapUrl: day.mapUrl,
+            dayIndex: day.dayIndex,
+            timestamp: challengeTimestampFor(date),
+            late: isLate(req),
+        });
+
+        res.send(`Challenge #${day.dayIndex} (${date}) posted.`);
+    } catch (e: any) {
+        console.error("[/repost/challenge] error:", e);
+        res.status(500).send(e?.message ?? "Error");
+    }
+});
+
+// Fetch and post the results of a past day that never got posted
+app.get("/repost/result", async (req, res) => {
+    console.log("[/repost/result] trigger", getRequestMeta(req));
+    if (!hasAdminAccess(req)) {
+        res.status(401).send(t("server.unauthorized"));
+        return;
+    }
+
+    try {
+        const date = String(req.query.date ?? "").trim();
+        if (!isYmd(date)) {
+            res.status(400).send("Missing/invalid date. Use /repost/result?date=YYYY-MM-DD");
+            return;
+        }
+
+        const day = getDayByDate(date);
+        if (!day) {
+            res.status(404).send(t("server.backfill.notFound", { date }));
+            return;
+        }
+
+        const raw = await getHighscoresByToken(day.token);
+        if (!raw?.items) {
+            res.status(502).send("No highscores returned");
+            return;
+        }
+
+        const { scores, players, items } = parseHighscoreItems(raw.items);
+        if (raw.items.length && !items.length) {
+            res.status(502).send(`None of the ${raw.items.length} highscore entries could be parsed (see logs). Nothing posted.`);
+            return;
+        }
+
+        recordDay({ date: new Date(`${date}T12:00:00Z`), token: day.token, scores, players });
+
+        const posted = await postResultOnce({
+            timestamp: challengeTimestampFor(date),
+            token: day.token,
+            highscores: { ...raw, items },
+        }, isLate(req));
+
+        res.send(posted
+            ? `Results #${day.dayIndex} (${date}) posted (${items.length} players).`
+            : `Results #${day.dayIndex} (${date}) were already posted; scores refreshed.`);
+    } catch (e: any) {
+        console.error("[/repost/result] error:", e);
+        res.status(500).send(e?.message ?? "Error");
+    }
+});
 
 app.use((req, _res, next) => {
     if (req.path === "/say") {
